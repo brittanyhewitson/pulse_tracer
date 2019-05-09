@@ -4,3 +4,12 @@ Note: when adding ideas, please indicate what you think are the different aspect
         such as circuitry, coding, system, etc.
         
         
+1) Problem to solve: older population = more falling and possible brain injury
+    Solution: fall detector that will alert chosen care provider/ medical staff, but will also wait for a few
+                seconds to see if subject will get back up. Attach EEG to keep train of brain activity
+                in case fall was caused by abnormal brain activity, or if fall caused abnormal brain activity
+    Systems:
+        Coding - write code to alert care providers
+        Circuitry - build EEG - could either buy or make accelerometer?
+        Others - have not thought that far yet, but will need some sort of casing for easy wearing
+    
