@@ -1,6 +1,7 @@
 import sys
 import cv2
 import click
+import timeit
 import logging
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,14 +20,15 @@ def convertToRGB(image):
 def process_video(filename):
     logging.info("Reading video file")
     video = cv2.VideoCapture(filename)
-
+    
+    start = timeit.default_timer()
     while(True):
         ret, frame = video.read()
         if frame is None:
             break
 
         # detect the face
-        logging.info("Detecting facial features")
+        #logging.info("Detecting facial features")
         haar_cascade_face = cv2.CascadeClassifier('data/haarcascade_frontalface_default.xml')
         gray_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         faces_rect = haar_cascade_face.detectMultiScale(gray_image, scaleFactor=1.1, minNeighbors=5)
@@ -40,6 +42,9 @@ def process_video(filename):
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
+    stop = timeit.default_timer()
+    total_time = stop - start
+    print("Total time was %s" % total_time)
     # When everything done, release the capture
     video.release()
     cv2.destroyAllWindows()
