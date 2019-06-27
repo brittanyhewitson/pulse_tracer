@@ -1,5 +1,7 @@
 Click==7.0
+cmake==3.14.4
 cycler==0.10.0
+dlib==19.17.0
 kiwisolver==1.1.0
 matplotlib==3.0.3
 numpy==1.13.3
