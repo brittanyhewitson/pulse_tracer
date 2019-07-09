@@ -1,5 +1,9 @@
 Click==7.0
+<<<<<<< HEAD
 cmake==3.13.3
+=======
+cmake==3.14.4
+>>>>>>> origin
 cycler==0.10.0
 dlib==19.17.0
 kiwisolver==1.1.0
