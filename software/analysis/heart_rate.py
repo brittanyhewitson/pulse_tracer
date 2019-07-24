@@ -133,5 +133,8 @@ class HeartRate(object):
         heart_rate = peak_value * 60
         
         return heart_rate
+    
+    def get_average_signal(self):
+        return self.get_average("right_cheek")
 
         

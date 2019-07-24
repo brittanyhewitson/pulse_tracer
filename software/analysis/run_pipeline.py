@@ -4,6 +4,10 @@ import click
 import logging
 
 from heart_rate import HeartRate
+from resp_rate import RespRate
+
+#temp
+import matplotlib.pyplot as plt
 
 # Set up logging
 LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
@@ -21,10 +25,16 @@ def main(json_file):
 
     # Begin Heart Rate Extraction
     heart_rate_processing = HeartRate(data=data)
-
+    
+    resp_rate_processing = RespRate()
+    
     heart_rate = heart_rate_processing.determine_heart_rate()
+    
+    resp_rate = resp_rate_processing.determine_resp_rate(heart_rate_processing.get_average_signal())
 
     logging.info(f"The heart rate for this video is {heart_rate} bpm")
-
+    
+    logging.info(f"The respiratory rate for this video is {resp_rate} bpm")
+    
 if __name__=='__main__':
     main()
