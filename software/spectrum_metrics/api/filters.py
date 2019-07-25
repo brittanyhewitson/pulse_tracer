@@ -45,6 +45,7 @@ class PatientFilters(filters.FilterSet):
         model = Patient
         fields = {
             "id": ["exact"],
+            "name": ["exact"],
             "health_care_provider__id": ["exact"],
             "health_care_provider__name": ["exact"],
         }
