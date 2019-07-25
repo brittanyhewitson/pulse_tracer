@@ -1,3 +1,5 @@
+#This script import a JSON file into Azure SQL server
+
 from azure.storage.blob import BlockBlobService, PublicAccess
 import os
 import json
