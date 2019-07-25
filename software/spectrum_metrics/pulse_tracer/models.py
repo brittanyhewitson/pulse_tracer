@@ -13,7 +13,8 @@ class Device(models.Model):
 
     serial_number = models.CharField(
         max_length=100,
-        blank=False
+        blank=False,
+        unique=True,
     )
 
     def __str__(self):
