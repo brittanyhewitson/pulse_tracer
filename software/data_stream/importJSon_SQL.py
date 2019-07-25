@@ -6,7 +6,7 @@ import json
 import pyodbc
 
 # connect to Azure
-dsn = 'rpitestsqlserverdatasource'
+dsn = 'rpitestsqlserverdatasource' #Set up connection to an ODBC data soure-already set up on the current rpi
 
 user = 'team2@capstonesfu'
 
@@ -27,7 +27,7 @@ file=os.path.abspath('/home/pi/Desktop/example_1.json')
 json_data=open(file).read()
 json_obj=json.loads(json_data)
 
-#Parsing the JSON file
+#Parsing the JSON string
 def validate_string(val):
    if val != None:
         if type(val) is int:
