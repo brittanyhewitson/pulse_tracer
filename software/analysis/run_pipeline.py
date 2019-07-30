@@ -3,6 +3,7 @@ import json
 import click
 import logging
 
+from dbclient.spectrum_metrics import SpectrumApi
 from heart_rate import HeartRate
 from resp_rate import RespRate
 
@@ -16,12 +17,28 @@ logging.basicConfig(format=LOGGING_FORMAT, stream=sys.stderr, level=logging.INFO
 
 @click.command()
 @click.argument("json_file", nargs=1)
-def main(json_file):
-    # Get data
-    # Until the pipeline is set up, this will just be 
-    # a json file that is the output of the preprocessing algorithm
-    with open(json_file, "r") as json_file:
-        data = json.load(json_file)
+@click.argument("batch_id", nargs=1)
+@click.option("--database", is_flag=True)
+def main(**kwargs):
+    
+    if kwargs["database"]:
+        spectrum_api = SpectrumApi()
+
+        # Query the database for all ROI with this batch ID
+        data = spectrum_api.list_resources(
+            "rois",
+            batch_id=kwargs["batch_id"],
+        )
+        
+    else:
+        # Get data
+        # Until the pipeline is set up, this will just be 
+        # a json file that is the output of the preprocessing algorithm
+        with open(kwargs["json_file"], "r") as json_file:
+            data = json.load(json_file)
+
+        # Conver the data list into a generator
+        #data = (x for x in data)
 
     # Begin Heart Rate Extraction
     heart_rate_processing = HeartRate(data=data)

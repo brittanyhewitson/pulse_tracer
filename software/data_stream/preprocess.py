@@ -1,12 +1,18 @@
+import os
 import cv2
 import sys
-import time
+import pytz
 import json
 import click
 import timeit
 import logging
 
+from datetime import datetime
+
 from process_images import ProcessVideo
+from dbclient.spectrum_metrics import SpectrumApi, NotFoundError
+
+spectrum_api = SpectrumApi()
 
 # Set up logging
 LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
@@ -15,6 +21,8 @@ logging.basicConfig(
     stream=sys.stderr, 
     level=logging.INFO
 )
+
+TIMEZONE = pytz.timezone("Canada/Pacific")
 
 
 def get_video_roi_data(filename):
@@ -28,6 +36,8 @@ def get_video_roi_data(filename):
                             the time of the frame, and the ROI data
     """
     process_video = ProcessVideo(filename)
+    current_datetime = datetime.now(TIMEZONE)
+    process_video.batch_id = current_datetime.strftime("%Y%m%d%H%M%S")
 
     # Time the algorithm
     start = timeit.default_timer()
@@ -40,7 +50,7 @@ def get_video_roi_data(filename):
         # Add frame info to the class
         process_video.frame = frame
         process_video.gray_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        process_video.frame_time = time.time()
+        process_video.frame_time = datetime.now(TIMEZONE).isoformat()
 
         # Detect the face
         faces = process_video.detect_faces()
@@ -89,6 +99,35 @@ def file(**kwargs):
     Args:
         filename:   (str) filepath to the mp4 to be analyzed
     """
+    # Get the device metadata
+    serial_number = os.environ.get("DEVICE_SERIAL_NUMBER")
+    device_model = os.environ.get("DEVICE_MODEL")
+
+    # Will not happen in production
+    if serial_number is None or device_model is None:
+        raise Exception("Please ensure the device has a serial number and model")
+
+    # Get the device object from the database
+    device = spectrum_api.get_or_create(
+        "devices", 
+        device_model=device_model,
+        serial_number=serial_number,
+    )
+
+    # Get the patient associated with this device in the database
+    try:
+        patient = spectrum_api.get(
+            "patients",
+            device__id=device["id"]
+        )
+    except NotFoundError:
+        id = device["id"]
+        raise Exception(f"Please register the patient associated with device {id} on the database")
+    
+    # Pass this device and patient info to the preprocess function
+    kwargs["device"] = device
+
+    # Preprocess the data
     run_preprocess(**kwargs)
 
 
@@ -110,6 +149,22 @@ def run_preprocess(**kwargs):
     """
     # Image Processing
     data = get_video_roi_data(kwargs["filename"])
+
+    '''
+    # Add the data to the database
+    for roi in data:
+        new_roi = spectrum_api.get_or_create(
+            "rois",
+            device=kwargs["device"]["id"],
+            location_id=roi["location_id"],
+            red_data=roi["red_data"],
+            green_data=roi["green_data"],
+            blue_data=roi["blue_data"],
+            collection_time=roi["collection_time"],
+            batch_id=roi["batch_id"]
+        )
+    '''
+
     
     # Data Transmission
 

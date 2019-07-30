@@ -38,8 +38,8 @@ class HeartRate(object):
         
         red_average = []
         for roi in self.data:
-            if roi["landmark"] == 35:
-                red_average.append(np.array(roi["red_roi"]).mean())
+            if roi["location_id"] == 35:
+                red_average.append(np.array(roi["red_data"]).mean())
         red_average = np.array(red_average)
         
         '''
