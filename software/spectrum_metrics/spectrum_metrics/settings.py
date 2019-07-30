@@ -80,13 +80,17 @@ WSGI_APPLICATION = 'spectrum_metrics.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'spectrum_test',
-        'USER': os.environ.get('DATABASE_USER'),
-        'PASSWORD': os.environ.get('DATABASE_PASSWORD'),
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
+        'ENGINE': 'sql_server.pyodbc',
+        'HOST': 'capstonesfu.database.windows.net',
+        'PORT': '1433',
+        'NAME': 'spectrum_metrics',
+        'USER': 'team2@capstonesfu',
+        'PASSWORD': '@ensc405',
+        'OPTIONS': {
+            'driver': 'ODBC Driver 17 for SQL Server',
+            'unicode_results': True,
+        },
+    },
 }
 
 
