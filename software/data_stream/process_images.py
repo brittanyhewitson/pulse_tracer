@@ -1,7 +1,6 @@
 import sys
 import cv2
 import dlib
-import time
 import click
 import json
 import logging
@@ -9,6 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from math import floor, sqrt
+from datetime import datetime
 
 # Set up logging
 LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
@@ -44,6 +44,7 @@ class ProcessVideo(object):
         self.frame_time = 0
         self.frame = []
         self.gray_image = []
+        self.batch_id = ""
 
     def rotate_image(self):
         rows, cols, color = frame.shape
@@ -88,13 +89,15 @@ class ProcessVideo(object):
             cv2.rectangle(self.frame, (x1, y1), (x2, y2), (255, 255, 0), 2)
 
             roi = {
-                'time': self.frame_time,
-                'landmark': n,
-                'red_roi': self.frame[x2:x1, y2:y1, 2].tolist(),
-                'green_roi': self.frame[x2:x1, y2:y1, 1].tolist(),
-                'blue_roi': self.frame[x2:x1, y2:y1, 0].tolist()
+                'batch_id': self.batch_id,
+                'collection_time': self.frame_time,
+                'location_id': n,
+                'red_data': self.frame[x2:x1, y2:y1, 2].tolist(),
+                'green_data': self.frame[x2:x1, y2:y1, 1].tolist(),
+                'blue_data': self.frame[x2:x1, y2:y1, 0].tolist()
             }
-            self.rois.append(roi)
+            if n in [31, 35]:
+                self.rois.append(roi)
 
     def get_landmarks(self, faces):
         for (x, y, w, h) in faces:

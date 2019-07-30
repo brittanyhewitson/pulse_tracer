@@ -7,6 +7,7 @@ import logging
 
 from coreapi.codecs import JSONCodec, TextCodec
 from openapi_codec import OpenAPICodec
+import datetime
 
 SPECTRUM_METRICS_API_URL = "http://127.0.0.1:8000/api/"
 
@@ -24,11 +25,14 @@ class NotFoundError(Exception):
 
 
 class PostError(Exception):
-    def __init__(self, post_type, response, **data):
-        table = data["table"].strip("s")
-        id = data["id"]
-        self.msg = f"Could not {post_type} {table} with id {id}\
-        \nError code: {response.status_code}\nMessage: {response.text}"
+    def __init__(self, post_type=None, response=None, msg=None, **data):
+        if msg:
+            self.msg = msg
+        else:
+            table = data["table"].strip("s")
+            id = data["id"]
+            self.msg = f"Could not {post_type} {table} with id {id}\
+            \nError code: {response.status_code}\nMessage: {response.text}"
 
     def __str__(self):
         return self.msg
@@ -76,28 +80,68 @@ class SpectrumApi(object):
         decoders = [OpenAPICodec(), JSONCodec(), TextCodec()]
         self.coreapi_client = coreapi.Client(auth=auth, decoders=decoders)
         self.coreapi_schema = self.coreapi_client.get(self.swagger_url)
+        
+    def list_resources(self, table, **fields):
+        params = {}
+        # Get only the fields in the "list" fields
+        for field in self.coreapi_schema[table]["list"].fields:
+            if field.name in fields:
+                params[field.name] = fields[field.name]
+
+        params["page"] = 1
+
+        # Iterate through pages of the API
+        while True:
+            list_results = self.coreapi_client.action(
+                self.coreapi_schema, 
+                [table, "list"],
+                params=params
+            )
+            if list_results["count"] == 0:
+                raise NotFoundError
+
+            for result in list_results["results"]:
+                yield result
+
+            if list_results.get("next") is None:
+                break
+
+            params["page"] += 1
 
     def get(self, table, **fields):
-        list_results = self.coreapi_client.action(
-            self.coreapi_schema, 
-            [table, "list"],
-            params=fields
+        list_results = self.list_resources(
+            table, 
+            **fields
         )
-
-        if list_results["count"] == 0:
+        
+        try:
+            result = next(list_results)
+        except StopIteration:
             raise NotFoundError
 
-        '''
-        # Check the results
-        for result in list_results["results"]:
-            for field_name, field_value in fields.items():
-                result_field = result[field_name]
-                print(result)
-        '''
-
-        return list_results["results"]
+        try:
+            result = next(list_results)
+            table = table.strip("s")
+            raise Exception(f"More than one result for {table} with {fields}")
+        except StopIteration:
+            pass
+            
+        return result
     
-    def create(self, table, **fields):      
+    def create(self, table, **fields):
+        # Try getting the object first
+        try:
+            new_object = self.get(
+                table, 
+                **fields
+            )
+            table = table.strip("s")
+            id = new_object["id"]
+            raise PostError(msg=f"Cannot create {table}.\
+                \nObject already exists with ID {id}")
+        except NotFoundError:
+            pass
+
         new_object = self.coreapi_client.action(
             self.coreapi_schema, 
             [table, "create"],
@@ -109,14 +153,6 @@ class SpectrumApi(object):
         return new_object
     
     def update(self, table, id, **fields):
-        # TODO: Figure out how to use coreapi for this
-        '''
-        return self.coreapi_client.action(
-            self.coreapi_schema,
-            [table, "edit"],
-            params=fields
-        )
-        '''
         if id is None:
             raise BadInput("Please specify an ID for the object you are editing")
         
@@ -145,20 +181,11 @@ class SpectrumApi(object):
                 **fields
             )
 
+        table = table.strip("s")
         logging.info(f"Successfully updated {table} with ID {id}")
         return response.json()
 
     def delete(self, table, id): 
-        '''
-        # TODO: Figure out how to make this work with coreapi
-        results = self.get(table, id=id)
-        print(results) 
-        self.coreapi_client.action(
-            self.coreapi_schema, 
-            [table, "delete"],
-            params={"id": id}
-        )
-        '''
         if id is None:
             raise BadInput("Please specify an ID for the object you are deleting")
 
@@ -189,9 +216,9 @@ class SpectrumApi(object):
 
     def get_or_create(self, table, **fields):
         try:
-            return self.get(table, fields)
+            return self.get(table, **fields)
         except NotFoundError:
-            return self.create(table, fields)
+            return self.create(table, **fields)
 
     def create_patient(self):
         raise NotImplementedError

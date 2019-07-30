@@ -2,7 +2,9 @@ from rest_framework import viewsets
 from .serializers import (
     DeviceSerializer,
     ROISerializer,
+    ROICreateSerializer,
     PatientSerializer,
+    PatientCreateSerializer,
     HealthCareSerializer,
     HeartRateSerializer,
     RespiratoryRateSerializer
@@ -45,6 +47,12 @@ class ROIViewSet(viewsets.ModelViewSet):
     serializer_class = ROISerializer
     filter_class = ROIFilters
 
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return ROICreateSerializer
+        
+        return ROISerializer
+
 
 class PatientViewSet(viewsets.ModelViewSet):
     """
@@ -53,6 +61,12 @@ class PatientViewSet(viewsets.ModelViewSet):
     queryset = Patient.objects.all()
     serializer_class = PatientSerializer
     filter_class = PatientFilters
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return PatientCreateSerializer
+        
+        return PatientSerializer
 
 
 class HealthCareViewSet(viewsets.ModelViewSet):
