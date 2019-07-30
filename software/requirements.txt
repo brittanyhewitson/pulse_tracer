@@ -3,7 +3,6 @@ cmake==3.14.4
 coreapi==2.3.3
 cycler==0.10.0
 dlib==19.17.0
-django-pyodbc-azure==2.1.0.0
 joblib==0.13.2
 kiwisolver==1.1.0
 matplotlib==3.0.3
