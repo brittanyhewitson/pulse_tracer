@@ -37,14 +37,7 @@ class ROI(models.Model):
     )
 
     # Data
-    data = ArrayField(
-        ArrayField(
-            models.DecimalField(
-                max_digits=5,
-                decimal_places=2,
-            )
-        )
-    )
+    data = models.TextField()
 
     # Collection Time
     collection_time = models.DateTimeField(
@@ -152,15 +145,7 @@ class HeartRate(models.Model):
     )
 
     # Data
-    data = ArrayField(
-        ArrayField(
-            models.DecimalField(
-                max_digits=5,
-                decimal_places=2,
-                blank=True
-            )
-        )
-    )
+    data = models.TextField()
 
     # Collection Time
     collection_time = models.DateTimeField(
@@ -195,15 +180,7 @@ class RespiratoryRate(models.Model):
     )
 
     # Data
-    data = ArrayField(
-        ArrayField(
-            models.DecimalField(
-                max_digits=5,
-                decimal_places=2,
-                blank=True
-            )
-        )
-    )
+    data = models.TextField()
 
     # Collection Time
     collection_time = models.DateTimeField(
