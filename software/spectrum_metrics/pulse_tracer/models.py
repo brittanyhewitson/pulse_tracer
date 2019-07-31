@@ -50,7 +50,7 @@ class ROI(models.Model):
     batch_id = models.CharField(
         max_length=100,
     )
-
+    
     # Data
     red_data = models.TextField()
     blue_data = models.TextField()

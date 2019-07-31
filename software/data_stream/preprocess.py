@@ -177,6 +177,8 @@ def file(**kwargs):
     if not roi_locations:
         raise Exception("No valid ROI locations provided")
 
+    kwargs["roi_locations"] = roi_locations
+
     # Preprocess the data
     run_preprocess(**kwargs)
 
