@@ -1,5 +1,4 @@
 from django.db import models
-from django.contrib.postgres.fields import ArrayField
 
 # Create your models here.
 class Device(models.Model):
@@ -8,12 +7,10 @@ class Device(models.Model):
     # Model
     device_model = models.CharField(
         max_length=100,
-        blank=False
     )
 
     serial_number = models.CharField(
         max_length=100,
-        blank=False,
         unique=True,
     )
 
@@ -28,32 +25,56 @@ class ROI(models.Model):
     LOCATION_ID_CHOICES = [
         ("31", "Right Cheek"),
         ("35", "Left Cheek"),
+        ("27", "Upper Nose"),
+        ("28", "Mid-Upper Nose"),
+        ("29", "Mid-Lower Nose"),
+        ("30", "Lower Nose"),
+        ("17", "Left Outer Brow"),
+        ("18", "Left Mid-Outer Brow"),
+        ("19", "Left Mid Brow"),
+        ("20", "Left Mid-Inner Brow"),
+        ("21", "Left Inner Brow"),
+        ("22", "Right Inner Brow"),
+        ("23", "Right Mid-Inner Brow"),
+        ("24", "Right Mid Brow"),
+        ("25", "Right Mid-Outer Brow"),
+        ("26", "Right Outer Brow"),
     ]
     # Location ID
     location_id = models.CharField(
         max_length=100,
         choices=LOCATION_ID_CHOICES,
-        blank=False,
     )
 
+    # Batch ID
+    batch_id = models.CharField(
+        max_length=100,
+    )
+    
     # Data
-    data = models.TextField()
-
+    red_data = models.TextField()
+    blue_data = models.TextField()
+    green_data = models.TextField()
+    
     # Collection Time
     collection_time = models.DateTimeField(
-        blank=False,
+        auto_now=True,
+    )
+
+    # Analyzed by the Heart Rate Algorithm
+    hr_analyzed = models.BooleanField(
+        default=False
+    )
+
+    # Analyzed by the Respiratory Rate Algorithm
+    rr_analyzed = models.BooleanField(
+        default=False
     )
 
     # Device ID (FK)
     device = models.ForeignKey(
         "Device",
         on_delete=models.CASCADE
-    )
-
-    # Patient ID (FK)
-    patient = models.ForeignKey(
-        "Patient",
-        on_delete=models.CASCADE,
     )
 
     # When the object PK is displayed
@@ -71,7 +92,6 @@ class Patient(models.Model):
 
     # Date of Birth
     birth_date = models.DateField(
-        blank=False,
     )
 
     # TODO: some sort of convention for lbs or kgs
@@ -126,7 +146,6 @@ class HealthCare(models.Model):
     role = models.CharField(
         max_length=100,
         choices=ROLE_CHOICES,
-        blank=False,
     )
 
     # When the object PK is displayed
@@ -148,8 +167,8 @@ class HeartRate(models.Model):
     data = models.TextField()
 
     # Collection Time
-    collection_time = models.DateTimeField(
-        blank=False,
+    analyzed_time = models.DateTimeField(
+        auto_now=True,
     )
 
     # Patient ID (FK)
@@ -183,8 +202,8 @@ class RespiratoryRate(models.Model):
     data = models.TextField()
 
     # Collection Time
-    collection_time = models.DateTimeField(
-        blank=False,
+    analyzed_time = models.DateTimeField(
+        auto_now=True,
     )
 
     # Patient ID (FK)

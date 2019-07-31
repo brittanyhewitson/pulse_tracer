@@ -1,12 +1,18 @@
+import os
 import cv2
 import sys
-import time
+import pytz
 import json
 import click
 import timeit
 import logging
 
+from datetime import datetime
+
 from process_images import ProcessVideo
+from dbclient.spectrum_metrics import SpectrumApi, NotFoundError
+
+spectrum_api = SpectrumApi()
 
 # Set up logging
 LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
@@ -16,8 +22,48 @@ logging.basicConfig(
     level=logging.INFO
 )
 
+TIMEZONE = pytz.timezone("Canada/Pacific")
 
-def get_video_roi_data(filename):
+LOCATION_ID_CHOICES = [
+        "right_cheek",
+        "left_cheek",
+        "upper_nose",
+        "mid_upper_nose",
+        "mid_lower_nose",
+        "lower_nose",
+        "left_outer_brow",
+        "left_mid_outer_brow",
+        "left_mid_brow",
+        "left_mid_inner_brow",
+        "left_inner_brow",
+        "right_inner_brow",
+        "right_mid_inner_brow",
+        "right_mid_brow",
+        "right_mid_outer_brow",
+        "right_outer_brow",
+    ]
+
+ROI_MAP = {
+    "right_cheek": "31",
+    "left_cheek": "35",
+    "upper_nose": "27",
+    "mid_upper_nose": "28",
+    "mid_lower_nose": "29",
+    "lower_nose": "30",
+    "left_outer_brow": "17",
+    "left_mid_outer_brow": "18",
+    "left_mid_brow": "19",
+    "left_mid_inner_brow": "20",
+    "left_inner_brow": "21",
+    "right_inner_brow": "22",
+    "right_mid_inner_brow": "23",
+    "right_mid_brow": "24",
+    "right_mid_outer_brow": "25",
+    "right_outer_brow": "26",
+}
+
+
+def get_video_roi_data(filename, roi_locations):
     """
     Processes a video to extract ROI at each frame in the clip
 
@@ -28,6 +74,8 @@ def get_video_roi_data(filename):
                             the time of the frame, and the ROI data
     """
     process_video = ProcessVideo(filename)
+    current_datetime = datetime.now(TIMEZONE)
+    process_video.batch_id = current_datetime.strftime("%Y%m%d%H%M%S")
 
     # Time the algorithm
     start = timeit.default_timer()
@@ -40,7 +88,7 @@ def get_video_roi_data(filename):
         # Add frame info to the class
         process_video.frame = frame
         process_video.gray_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        process_video.frame_time = time.time()
+        process_video.frame_time = datetime.now(TIMEZONE).isoformat()
 
         # Detect the face
         faces = process_video.detect_faces()
@@ -50,7 +98,7 @@ def get_video_roi_data(filename):
         # Need to add function for comparing multiple detected faces here
 
         # Get the landmarks
-        process_video.get_landmarks(faces)
+        process_video.get_landmarks(faces, roi_locations)
 
         # Show the image
         cv2.imshow('frame', process_video.frame)
@@ -82,6 +130,7 @@ def input_type():
 
 @input_type.command()
 @click.argument("filename", nargs=1)
+@click.argument("roi_locations", nargs=-1)
 def file(**kwargs):
     """
     For testing purposes only -- run the pipeline on an input video
@@ -89,6 +138,48 @@ def file(**kwargs):
     Args:
         filename:   (str) filepath to the mp4 to be analyzed
     """
+    # Get the device metadata
+    serial_number = os.environ.get("DEVICE_SERIAL_NUMBER")
+    device_model = os.environ.get("DEVICE_MODEL")
+
+    # Will not happen in production
+    if serial_number is None or device_model is None:
+        raise Exception("Please ensure the device has a serial number and model")
+
+    # Get the device object from the database
+    device = spectrum_api.get_or_create(
+        "devices", 
+        device_model=device_model,
+        serial_number=serial_number,
+    )
+
+    # Get the patient associated with this device in the database
+    try:
+        patient = spectrum_api.get(
+            "patients",
+            device__id=device["id"]
+        )
+    except NotFoundError:
+        id = device["id"]
+        raise Exception(f"Please register the patient associated with device {id} on the database")
+    
+    # Pass this device and patient info to the preprocess function
+    kwargs["device"] = device
+
+    # Pass the ROI info
+    roi_locations = []
+    for roi_location in kwargs["roi_locations"]:
+        try:
+            roi_locations.append(ROI_MAP[roi_location])
+        except KeyError:
+            logging.warning(f"Unrecognized ROI location {roi_location}. Skipping this ROI")
+    
+    if not roi_locations:
+        raise Exception("No valid ROI locations provided")
+
+    kwargs["roi_locations"] = roi_locations
+
+    # Preprocess the data
     run_preprocess(**kwargs)
 
 
@@ -109,10 +200,23 @@ def run_preprocess(**kwargs):
                 video file
     """
     # Image Processing
-    data = get_video_roi_data(kwargs["filename"])
+    data = get_video_roi_data(kwargs["filename"], kwargs["roi_locations"])
     
-    # Data Transmission
-
+    # Add the data to the database
+    '''
+    for roi in data:
+        new_roi = spectrum_api.get_or_create(
+            "rois",
+            device=kwargs["device"]["id"],
+            location_id=roi["location_id"],
+            red_data=str(roi["red_data"]),
+            green_data=str(roi["green_data"]),
+            blue_data=str(roi["blue_data"]),
+            collection_time=roi["collection_time"],
+            batch_id=roi["batch_id"]
+        )
+    '''
+    
 
 if __name__=='__main__':
     input_type()
