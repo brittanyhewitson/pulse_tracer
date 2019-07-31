@@ -31,6 +31,7 @@ In order to run the Pulse Tracer pipeline and access the Azure database, the fol
 ```
 SPECTRUM_API_USERNAME
 SPECTRUM_API_PASSWORD
+SPECTRUM_API_URL
 DEVICE_SERIAL_NUMBER
 DEVICE_MODEL
 ```
