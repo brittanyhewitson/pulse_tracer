@@ -47,9 +47,9 @@ class ProcessVideo(object):
         self.batch_id = ""
 
     def rotate_image(self):
-        rows, cols, color = frame.shape
+        rows, cols, color = self.frame.shape
         M = cv2.getRotationMatrix2D((cols/2, rows/2), 270, 1)
-        frame = cv2.warpAffine(frame, M, (cols, rows))
+        frame = cv2.warpAffine(self.frame, M, (cols, rows))
         return frame
 
     def draw_rectangle(self, faces, color):
@@ -96,10 +96,11 @@ class ProcessVideo(object):
                 'green_data': self.frame[x2:x1, y2:y1, 1].tolist(),
                 'blue_data': self.frame[x2:x1, y2:y1, 0].tolist()
             }
-            if n in [31, 35]:
+            if n in self.roi_locations:
                 self.rois.append(roi)
 
-    def get_landmarks(self, faces):
+    def get_landmarks(self, faces, roi_locations):
+        self.roi_locations = roi_locations
         for (x, y, w, h) in faces:
             face = dlib.rectangle(x, y, w+x, h+y)
             landmarks = self.predictor(self.gray_image, face)

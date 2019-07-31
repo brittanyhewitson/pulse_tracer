@@ -17,7 +17,7 @@ logging.basicConfig(format=LOGGING_FORMAT, stream=sys.stderr, level=logging.INFO
 
 @click.command()
 @click.argument("json_file", nargs=1)
-@click.argument("batch_id", nargs=1)
+#@click.argument("batch_id", nargs=1)
 @click.option("--database", is_flag=True)
 def main(**kwargs):
     

@@ -1,5 +1,4 @@
 from django.db import models
-from django.contrib.postgres.fields import ArrayField
 
 # Create your models here.
 class Device(models.Model):
@@ -53,20 +52,9 @@ class ROI(models.Model):
     )
 
     # Data
-    data = models.TextField()
-
-    blue_data = ArrayField(
-        ArrayField(
-            models.DecimalField(
-                max_digits=5,
-                decimal_places=2,
-            ),
-            null=True,
-            blank=True,
-        ),
-        null=True,
-        blank=True,
-    )
+    red_data = models.TextField()
+    blue_data = models.TextField()
+    green_data = models.TextField()
     
     # Collection Time
     collection_time = models.DateTimeField(

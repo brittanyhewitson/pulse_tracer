@@ -9,7 +9,7 @@ from coreapi.codecs import JSONCodec, TextCodec
 from openapi_codec import OpenAPICodec
 import datetime
 
-SPECTRUM_METRICS_API_URL = "http://127.0.0.1:8000/api/"
+SPECTRUM_METRICS_API_URL = os.environ.get("SPECTRUM_API_URL", "http://127.0.0.1:8000/api/")
 
 # Set up logging
 LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
