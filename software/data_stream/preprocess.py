@@ -84,6 +84,9 @@ def get_video_roi_data(filename, roi_locations):
         ret, frame = process_video.video.read()
         if frame is None:
             break
+            
+        # Correct for illumination
+        frame = hist_equal(frame)
 
         # Add frame info to the class
         process_video.frame = frame
@@ -122,6 +125,11 @@ def get_video_roi_data(filename, roi_locations):
         json.dump(process_video.rois, filename)
 
     return process_video.rois
+    
+def hist_equal(frame):
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+    frame = clahe.apply(frame)
+    return frame
 
 
 @click.group()
