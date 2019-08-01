@@ -170,7 +170,7 @@ def file(**kwargs):
     roi_locations = []
     for roi_location in kwargs["roi_locations"]:
         try:
-            roi_locations.append(ROI_MAP[roi_location])
+            roi_locations.append(int(ROI_MAP[roi_location]))
         except KeyError:
             logging.warning(f"Unrecognized ROI location {roi_location}. Skipping this ROI")
     
