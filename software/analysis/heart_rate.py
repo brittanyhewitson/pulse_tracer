@@ -30,16 +30,12 @@ class HeartRate(object):
         self.transformer = FastICA(n_components=1)
         self.data = kwargs["data"]
 
-    def get_average(self, landmark):
-        try:
-            landmark_id = LANDMARK_MAP[landmark]
-        except KeyError:
-            raise Exception("UNKNOWN LANDMARK ID")
+    def get_average(self):
         
         red_average = []
         for roi in self.data:
-            if roi["location_id"] == 35:
-                red_average.append(np.array(roi["red_data"]).mean())
+            red_average.append(np.array(roi["red_data"]).mean())
+        
         red_average = np.array(red_average)
         
         '''
@@ -61,7 +57,7 @@ class HeartRate(object):
         return normalized
 
     def get_source(self, red_normal):
-        red_source = self.transformer.fit_transform(red_average.reshape(-1, 1))
+        red_source = self.transformer.fit_transform(red_normal.reshape(-1, 1))
         '''
         plt.plot(red_source)
         plt.show()
@@ -105,7 +101,7 @@ class HeartRate(object):
 
     def determine_heart_rate(self):
         # Start with just the red channel for right cheek right now
-        red_average_signal = self.get_average("right_cheek")
+        red_average_signal = self.get_average()
 
         # Normalize the signal
         normalized_signal = self.normalization(red_average_signal)
@@ -135,6 +131,6 @@ class HeartRate(object):
         return heart_rate
     
     def get_average_signal(self):
-        return self.get_average("right_cheek")
+        return self.get_average()
 
         
