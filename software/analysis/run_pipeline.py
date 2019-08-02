@@ -51,7 +51,7 @@ def main(**kwargs):
 
     logging.info(f"The heart rate for this video is {heart_rate} bpm")
     
-    logging.info(f"The respiratory rate for this video is {resp_rate} bpm")
+    logging.info(f"The respiratory rate for this video is {resp_rate} breaths")
     
 if __name__=='__main__':
     main()
