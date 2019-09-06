@@ -14,13 +14,6 @@ from datetime import datetime
 LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 logging.basicConfig(format=LOGGING_FORMAT, stream=sys.stderr, level=logging.INFO)
 
-TRAINED_XMLS = [
-    '../data/haarcascade_frontalface_default.xml',
-    '../data/haarcascade_frontalface_alt.xml',
-    '../data/haarcascade_frontalface_alt2.xml',
-    '../data/haarcascade_profileface.xml'
-]
-
 
 class ProcessStream(object):
     def __init__(self):
@@ -30,16 +23,19 @@ class ProcessStream(object):
 class ProcessVideo(object):
     def __init__(self, filename):
         self.predictor = dlib.shape_predictor("../data/shape_predictor_68_face_landmarks.dat")
+        self.model = cv2.dnn.readNetFromCaffe(
+            '../data/deploy.prototxt.txt', 
+            '../data/res10_300x300_ssd_iter_140000.caffemodel'
+        )
         self.video = cv2.VideoCapture(filename)  
-        self.trained_classifiers = []
+        #self.trained_classifiers = []
         self.colors = [
             (0, 255, 0),  # Green
             (255, 0, 0),  # Blue
             (0, 0, 255),  # Red
             (255, 0, 255) # Magenta
         ]
-        for trained_xml in TRAINED_XMLS:
-            self.trained_classifiers.append(cv2.CascadeClassifier(trained_xml))
+
         self.rois = []
         self.frame_time = 0
         self.frame = []
@@ -57,24 +53,59 @@ class ProcessVideo(object):
             cv2.rectangle(self.frame, (x, y), (x+w, y+h), color, 2)
 
     def detect_faces(self):
-        for i in range(len(self.trained_classifiers)):
-            faces = self.trained_classifiers[i].detectMultiScale(
-                self.gray_image, 
-                scaleFactor=1.1,
-                minNeighbors=5, 
-                minSize=(100, 100)
-            )
-            # Break if a face is recognized
-            if len(faces) > 0:
-                break
+        (h, w) = self.frame.shape[:2]
+        
+        # BGR
+        red_mean = np.array(self.frame[:, :, 2]).mean()
+        green_mean = np.array(self.frame[:, :, 1]).mean()
+        blue_mean = np.array(self.frame[:, :, 0]).mean()
 
-        # Return nothing if no face could be detected for this frame
-        if len(faces) == 0:
+        blob = cv2.dnn.blobFromImage(
+            image=cv2.resize(self.frame, (300, 300)), 
+            scalefactor=1.0,
+		    size=(300, 300), 
+            mean=(red_mean, green_mean, blue_mean)
+        )
+
+        self.model.setInput(blob)
+        detections = self.model.forward()
+
+        faces = []
+        for i in range(0, detections.shape[2]):
+            lower_confidence = 0.5
+            # extract the confidence of the prediction
+            confidence = detections[0, 0, i, 2]
+
+            # filter out weak detections 
+            if confidence < lower_confidence:
+                continue
+
+            box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
+            (x0, y0, x1, y1) = box.astype("int")
+            faces.append([x0, y0, x1, y1])
+
+            # draw the bounding box of the face along with the associated
+            # probability
+            text = "{:.2f}%".format(confidence * 100)
+            y = y0 - 10 if y0 - 10 > 10 else y0 + 10
+            cv2.rectangle(
+                self.frame, 
+                (x0, y0), 
+                (x1, y1),
+                (0, 0, 255), 
+                2
+            )
+            cv2.putText(
+                self.frame, 
+                text, 
+                (x0, y),
+                cv2.FONT_HERSHEY_SIMPLEX, 
+                0.45, 
+                (0, 0, 255), 
+                2
+            )
             return faces
 
-        # Draw the detected face
-        self.draw_rectangle(faces, self.colors[i])
-        return faces
 
     def get_roi(self, landmarks, landmark_range, roi_side, vert_translation, hor_translation):
         for n in landmark_range:
@@ -101,8 +132,8 @@ class ProcessVideo(object):
 
     def get_landmarks(self, faces, roi_locations):
         self.roi_locations = roi_locations
-        for (x, y, w, h) in faces:
-            face = dlib.rectangle(x, y, w+x, h+y)
+        for (x0, y0, x1, y1) in faces:
+            face = dlib.rectangle(x0, y0, x1, y1)
             landmarks = self.predictor(self.gray_image, face)
 
             # Determine the size of the ROI based on the detected face

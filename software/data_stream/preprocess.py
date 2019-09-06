@@ -12,7 +12,7 @@ from datetime import datetime
 from process_images import ProcessVideo
 from dbclient.spectrum_metrics import SpectrumApi, NotFoundError
 
-spectrum_api = SpectrumApi()
+#spectrum_api = SpectrumApi()
 
 # Set up logging
 LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
@@ -215,7 +215,7 @@ def run_preprocess(**kwargs):
             collection_time=roi["collection_time"],
             batch_id=roi["batch_id"]
         )
-    '''
+        '''
     
 
 if __name__=='__main__':
