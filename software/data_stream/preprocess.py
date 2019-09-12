@@ -10,7 +10,7 @@ import logging
 from datetime import datetime
 
 from process_images import ProcessVideo
-from dbclient.spectrum_metrics import SpectrumApi, NotFoundError
+#from dbclient.spectrum_metrics import SpectrumApi, NotFoundError
 
 #spectrum_api = SpectrumApi()
 
@@ -138,14 +138,16 @@ def file(**kwargs):
     Args:
         filename:   (str) filepath to the mp4 to be analyzed
     """
+    '''
     # Get the device metadata
     serial_number = os.environ.get("DEVICE_SERIAL_NUMBER")
     device_model = os.environ.get("DEVICE_MODEL")
-
+    
     # Will not happen in production
     if serial_number is None or device_model is None:
         raise Exception("Please ensure the device has a serial number and model")
-
+    '''
+    '''
     # Get the device object from the database
     device = spectrum_api.get_or_create(
         "devices", 
@@ -165,7 +167,7 @@ def file(**kwargs):
     
     # Pass this device and patient info to the preprocess function
     kwargs["device"] = device
-
+    '''
     # Pass the ROI info
     roi_locations = []
     for roi_location in kwargs["roi_locations"]:
@@ -184,11 +186,14 @@ def file(**kwargs):
 
 
 @input_type.command()
+@click.argument("roi_locations", nargs=-1)
 def stream(roi_locations):
     """
     Process images from a live stream
     """
     # starts capturing image from the default camera
+    #process_live = ProcessVideo(filename)
+
     process_live = cv2.VideoCapture(0)
     while True:
         frame, ret = process_live.read()
@@ -249,6 +254,7 @@ def stream(roi_locations):
 
     return process_live.rois
 
+
 def run_preprocess(**kwargs):
     """
     Processes the data and then transmits to the VM for analysis
@@ -258,8 +264,9 @@ def run_preprocess(**kwargs):
                 video file
     """
     # Image Processing
-    data = get_video_roi_data(kwargs["filename"], kwargs["roi_locations"])
-    
+    #data = get_video_roi_data(kwargs["filename"], kwargs["roi_locations"])
+    data = stream(kwargs["roi_locations"])
+   
     # Add the data to the database
     '''
     for roi in data:
@@ -273,8 +280,8 @@ def run_preprocess(**kwargs):
             collection_time=roi["collection_time"],
             batch_id=roi["batch_id"]
         )
-    '''
-
+        '''
+    
 
 if __name__=='__main__':
     input_type()
