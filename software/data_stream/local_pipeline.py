@@ -87,7 +87,7 @@ def main(filename, roi_locations):
 		red_data_str = str(red_data)
 	 	cursor.execute("INSERT INTO dbo.testing([time],landmark,blue_data,green_data,red_data) VALUES (?,?,?,?,?)", (time,landmark,blue_data_str,green_data_str,red_data_str))
 
-cnxn.commit()
+	cnxn.commit()
 
 if __name__=='__main__':
     main()
