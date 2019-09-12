@@ -184,12 +184,70 @@ def file(**kwargs):
 
 
 @input_type.command()
-def stream():
+def stream(roi_locations):
     """
     Process images from a live stream
     """
-    pass
+    # starts capturing image from the default camera
+    process_live = cv2.VideoCapture(0)
+    while True:
+        frame, ret = process_live.read()
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        cv2.imshow('frame', frame)
+        cv2.imshow('gray_frame', gray)
+    
+    #process_video = ProcessVideo(filename)
+    current_datetime = datetime.now(TIMEZONE)
+    process_live.batch_id = current_datetime.strftime("%Y%m%d%H%M%S")
+    
+    # Time the algorithm
+    start = timeit.default_timer()
+    # Capturing frames in an infinite loop
+    while(True):
+        # Read live camera
+        ret, frame = process_live.read()
+        if frame is None:
+            break
+    
+        # Add frame info to the class
+        process_live.frame = frame
 
+        #Convert the captured video into a gray-scale
+        process_live.gray_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        process_live.frame_time = datetime.now(TIMEZONE).isoformat()
+        
+        # Detect the face
+        faces = process_live.detect_faces()
+        if len(faces) == 0:
+            continue
+
+    # Need to add function for comparing multiple detected faces here
+
+    # Get the landmarks
+    process_live.get_landmarks(faces, roi_locations)
+
+    # Show the image
+    cv2.imshow('frame', process_live.frame)
+    
+    # Break if the "q" key is selected
+    if cv2.waitKey(1) & 0xFF == ord("q"):
+        break
+
+    # Log how long the algorithm took
+    stop = timeit.default_timer()
+    total_time = stop - start
+    logging.info("Total time was %s" % total_time)
+
+    # When everything done, release the capture
+    process_live.release()
+    cv2.destroyAllWindows()
+
+    # Save roi as json
+    dest_file = filename.strip(".mp4")
+    with open(f"{dest_file}.json", "w") as filename:
+        json.dump(process_live.rois, filename)
+
+    return process_live.rois
 
 def run_preprocess(**kwargs):
     """
@@ -215,8 +273,8 @@ def run_preprocess(**kwargs):
             collection_time=roi["collection_time"],
             batch_id=roi["batch_id"]
         )
-        '''
-    
+    '''
+
 
 if __name__=='__main__':
     input_type()
