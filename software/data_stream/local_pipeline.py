@@ -33,7 +33,7 @@ def main(filename, roi_locations):
     if not os.path.exists(json_output):
         logging.info("Running preprocess to determine ROI")
         # Run the Preprocessing algorithm to get ROIs
-        cmd = f"python3 preprocess.py file {mp4_file}"
+        cmd = f"python preprocess.py file {mp4_file}"
         for roi_location in roi_locations:
             cmd += f" {roi_location}"
         subprocess.check_call(cmd, shell=True)
