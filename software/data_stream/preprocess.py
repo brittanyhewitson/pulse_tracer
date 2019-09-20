@@ -6,6 +6,7 @@ import json
 import click
 import timeit
 import logging
+import subprocess
 
 from datetime import datetime
 
@@ -41,6 +42,7 @@ LOCATION_ID_CHOICES = [
         "right_mid_brow",
         "right_mid_outer_brow",
         "right_outer_brow",
+        "full_face"
     ]
 
 ROI_MAP = {
@@ -60,10 +62,11 @@ ROI_MAP = {
     "right_mid_brow": "24",
     "right_mid_outer_brow": "25",
     "right_outer_brow": "26",
+    "full_face": "99"
 }
 
 
-def get_video_roi_data(filename, roi_locations):
+def get_video_roi_data(filename, roi_locations, matrix_decomposition):
     """
     Processes a video to extract ROI at each frame in the clip
 
@@ -73,7 +76,7 @@ def get_video_roi_data(filename, roi_locations):
         process_video.rois: (list) a list of dicts holding landmark info,
                             the time of the frame, and the ROI data
     """
-    process_video = ProcessVideo(filename)
+    process_video = ProcessVideo(filename, matrix_decomposition)
     current_datetime = datetime.now(TIMEZONE)
     process_video.batch_id = current_datetime.strftime("%Y%m%d%H%M%S")
 
@@ -92,7 +95,7 @@ def get_video_roi_data(filename, roi_locations):
 
         # Detect the face
         faces = process_video.detect_faces()
-        if len(faces) == 0:
+        if not faces:
             continue
 
         # Need to add function for comparing multiple detected faces here
@@ -118,6 +121,10 @@ def get_video_roi_data(filename, roi_locations):
 
     # Save roi as json 
     dest_file = filename.strip(".mp4") 
+
+    if matrix_decomposition:
+        dest_file += "_matrix_decomp"
+        
     with open(f"{dest_file}.json", "w") as filename:
         json.dump(process_video.rois, filename)
 
@@ -131,6 +138,7 @@ def input_type():
 @input_type.command()
 @click.argument("filename", nargs=1)
 @click.argument("roi_locations", nargs=-1)
+@click.option("--matrix_decomposition", is_flag=True)
 def file(**kwargs):
     """
     For testing purposes only -- run the pipeline on an input video
@@ -145,7 +153,7 @@ def file(**kwargs):
     # Will not happen in production
     if serial_number is None or device_model is None:
         raise Exception("Please ensure the device has a serial number and model")
-
+    '''
     # Get the device object from the database
     device = spectrum_api.get_or_create(
         "devices", 
@@ -165,7 +173,7 @@ def file(**kwargs):
     
     # Pass this device and patient info to the preprocess function
     kwargs["device"] = device
-
+    '''
     # Pass the ROI info
     roi_locations = []
     for roi_location in kwargs["roi_locations"]:
@@ -178,6 +186,24 @@ def file(**kwargs):
         raise Exception("No valid ROI locations provided")
 
     kwargs["roi_locations"] = roi_locations
+
+    # Check that the file exists
+    if not os.path.exists(kwargs["filename"]):
+        raise Exception("The supplied file does not exist")
+    filename = kwargs["filename"]
+
+    # If this is the raw data, convert to MP4
+    if filename.endswith(".h264"):
+        logging.info("Creating mp4 from h264")
+        mp4_file = filename.strip(".h264") + ".mp4"
+        cmd = f"MP4Box -fps 30 -add {filename} {mp4_file}"
+        subprocess.check_call(cmd, shell=True)
+    elif filename.endswith(".mp4"):
+        mp4_file = filename
+    else:
+        raise Exception("Unrecognized file format")
+
+    kwargs["filename"] = mp4_file
 
     # Preprocess the data
     run_preprocess(**kwargs)
@@ -200,7 +226,7 @@ def run_preprocess(**kwargs):
                 video file
     """
     # Image Processing
-    data = get_video_roi_data(kwargs["filename"], kwargs["roi_locations"])
+    data = get_video_roi_data(kwargs["filename"], kwargs["roi_locations"], kwargs["matrix_decomposition"])
     
     # Add the data to the database
     '''

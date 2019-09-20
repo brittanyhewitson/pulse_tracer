@@ -21,7 +21,7 @@ class ProcessStream(object):
 
 
 class ProcessVideo(object):
-    def __init__(self, filename):
+    def __init__(self, filename, matrix_decomposition):
         self.predictor = dlib.shape_predictor("../data/shape_predictor_68_face_landmarks.dat")
         self.model = cv2.dnn.readNetFromCaffe(
             '../data/deploy.prototxt.txt', 
@@ -41,6 +41,7 @@ class ProcessVideo(object):
         self.frame = []
         self.gray_image = []
         self.batch_id = ""
+        self.matrix_decomposition = matrix_decomposition
 
     def rotate_image(self):
         rows, cols, color = self.frame.shape
@@ -113,22 +114,36 @@ class ProcessVideo(object):
             y_n = landmarks.part(n).y
             cv2.circle(self.frame, (x_n, y_n), 2, (255, 0, 0), -1)
 
-            x1 = x_n + hor_translation + roi_side
-            x2 = x_n + hor_translation - roi_side
-            y1 = y_n + vert_translation + roi_side
-            y2 = y_n + vert_translation - roi_side
-            cv2.rectangle(self.frame, (x1, y1), (x2, y2), (255, 255, 0), 2)
+            if self.matrix_decomposition:
+                roi = {
+                    'batch_id': self.batch_id,
+                    'collection_time': self.frame_time,
+                    'location_id': n,
+                    'red_data': str(self.frame[x_n, y_n, 2]),
+                    'green_data': str(self.frame[x_n, y_n, 1]),
+                    'blue_data': str(self.frame[x_n, y_n, 0])
+                }
+                if n in self.roi_locations:
+                    self.rois.append(roi)
 
-            roi = {
-                'batch_id': self.batch_id,
-                'collection_time': self.frame_time,
-                'location_id': n,
-                'red_data': self.frame[x2:x1, y2:y1, 2].tolist(),
-                'green_data': self.frame[x2:x1, y2:y1, 1].tolist(),
-                'blue_data': self.frame[x2:x1, y2:y1, 0].tolist()
-            }
-            if n in self.roi_locations:
-                self.rois.append(roi)
+            else:
+                x1 = x_n + hor_translation + roi_side
+                x2 = x_n + hor_translation - roi_side
+                y1 = y_n + vert_translation + roi_side
+                y2 = y_n + vert_translation - roi_side
+                cv2.rectangle(self.frame, (x1, y1), (x2, y2), (255, 255, 0), 2)
+
+                roi = {
+                    'batch_id': self.batch_id,
+                    'collection_time': self.frame_time,
+                    'location_id': n,
+                    'red_data': self.frame[x2:x1, y2:y1, 2].tolist(),
+                    'green_data': self.frame[x2:x1, y2:y1, 1].tolist(),
+                    'blue_data': self.frame[x2:x1, y2:y1, 0].tolist()
+                }
+                if n in self.roi_locations:
+                    self.rois.append(roi)
+            
 
     def get_landmarks(self, faces, roi_locations):
         self.roi_locations = roi_locations
@@ -141,7 +156,7 @@ class ProcessVideo(object):
             roi_side = floor(sqrt(roi_area)/2)
             forehead_vert_translation = roi_side
             cheek_hor_translation = floor(sqrt(0.05 * face.area())/2)
-
+            
             # Get the ROI for the nose
             self.get_roi(
                 landmarks, 
