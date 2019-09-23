@@ -1,90 +1,46 @@
 import os
 import cv2
-import sys
-import pytz
-import json
+import sys 
 import click
 import timeit
 import logging
+import datetime
 import subprocess
 
+import numpy as np
+
 from datetime import datetime
-
 from process_images import ProcessVideo
-from dbclient.spectrum_metrics import SpectrumApi, NotFoundError
+from templates import (
+    LOGGING_FORMAT,
+    TIMEZONE,
+    LOCATION_ID_CHOICES,
+    ROI_WORD_TO_NUM_MAP
+)
 
-#spectrum_api = SpectrumApi()
 
 # Set up logging
-LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 logging.basicConfig(
     format=LOGGING_FORMAT, 
     stream=sys.stderr, 
     level=logging.INFO
 )
 
-TIMEZONE = pytz.timezone("Canada/Pacific")
 
-LOCATION_ID_CHOICES = [
-        "right_cheek",
-        "left_cheek",
-        "upper_nose",
-        "mid_upper_nose",
-        "mid_lower_nose",
-        "lower_nose",
-        "left_outer_brow",
-        "left_mid_outer_brow",
-        "left_mid_brow",
-        "left_mid_inner_brow",
-        "left_inner_brow",
-        "right_inner_brow",
-        "right_mid_inner_brow",
-        "right_mid_brow",
-        "right_mid_outer_brow",
-        "right_outer_brow",
-        "full_face"
-    ]
-
-ROI_MAP = {
-    "right_cheek": "31",
-    "left_cheek": "35",
-    "upper_nose": "27",
-    "mid_upper_nose": "28",
-    "mid_lower_nose": "29",
-    "lower_nose": "30",
-    "left_outer_brow": "17",
-    "left_mid_outer_brow": "18",
-    "left_mid_brow": "19",
-    "left_mid_inner_brow": "20",
-    "left_inner_brow": "21",
-    "right_inner_brow": "22",
-    "right_mid_inner_brow": "23",
-    "right_mid_brow": "24",
-    "right_mid_outer_brow": "25",
-    "right_outer_brow": "26",
-    "full_face": "99"
-}
-
-
-def get_video_roi_data(filename, roi_locations, matrix_decomposition):
+def get_roi_data(process_video, **kwargs):
     """
-    Processes a video to extract ROI at each frame in the clip
-
-    Args:
-        filename:   (str) full path to the video
-    Returns:
-        process_video.rois: (list) a list of dicts holding landmark info,
-                            the time of the frame, and the ROI data
+    Processes a video to extract ROIs for each frame
     """
-    process_video = ProcessVideo(filename, matrix_decomposition)
-    current_datetime = datetime.now(TIMEZONE)
-    process_video.batch_id = current_datetime.strftime("%Y%m%d%H%M%S")
+    # TODO: Need something else for the batch ID here
+    #current_datetime = datetime.now(TIMEZONE)
+    #process_video.batch_id = current_datetime.strftime("%Y%m%d%H%M%S")
+    batch_id = 0
 
     # Time the algorithm
     start = timeit.default_timer()
+    num_frames = 0
     while(True):
-        # Read the video
-        ret, frame = process_video.video.read()
+        frame = process_video.get_frame()
         if frame is None:
             break
 
@@ -101,10 +57,20 @@ def get_video_roi_data(filename, roi_locations, matrix_decomposition):
         # Need to add function for comparing multiple detected faces here
 
         # Get the landmarks
-        process_video.get_landmarks(faces, roi_locations)
+        process_video.get_landmarks(faces, kwargs["roi_locations"], batch_id)
 
         # Show the image
         cv2.imshow('frame', process_video.frame)
+
+        # Save the data
+        # TODO: Add counter here to count number of frames. Once it reaches
+        # 900 (30 seconds of video) increment the counter 
+        num_frames += 1
+        if num_frames == 10:
+            num_frames = 0
+            process_video.save_data(kwargs["database"], batch_id)
+            process_video.rois = []
+            batch_id += 1
 
         # Break if the "q" key is selected
         if cv2.waitKey(1) & 0xFF == ord("q"):
@@ -113,46 +79,25 @@ def get_video_roi_data(filename, roi_locations, matrix_decomposition):
     # Log how long the algorithm took
     stop = timeit.default_timer()
     total_time = stop - start
-    logging.info("Total time was %s" % total_time)
+    logging.info(f"Total time was {total_time}")
     
-    # When everything done, release the capture
-    process_video.video.release()
-    cv2.destroyAllWindows()
-
-    # Save roi as json 
-    dest_file = filename.strip(".mp4") 
-
-    if matrix_decomposition:
-        dest_file += "_matrix_decomp"
-        
-    with open(f"{dest_file}.json", "w") as filename:
-        json.dump(process_video.rois, filename)
+    # When everything is done, release the capture
+    process_video.release()
 
     return process_video.rois
 
-
-@click.group()
-def input_type():
-    pass
-
-@input_type.command()
-@click.argument("filename", nargs=1)
-@click.argument("roi_locations", nargs=-1)
-@click.option("--matrix_decomposition", is_flag=True)
-def file(**kwargs):
+def run_preprocess(process_video, **kwargs):
     """
-    For testing purposes only -- run the pipeline on an input video
-
-    Args:
-        filename:   (str) filepath to the mp4 to be analyzed
+    For both stream and video
     """
-    # Get the device metadata
+    # Get the local device metadata
     serial_number = os.environ.get("DEVICE_SERIAL_NUMBER")
     device_model = os.environ.get("DEVICE_MODEL")
 
-    # Will not happen in production
+    # Ensure the metadata is not None
     if serial_number is None or device_model is None:
         raise Exception("Please ensure the device has a serial number and model")
+
     '''
     # Get the device object from the database
     device = spectrum_api.get_or_create(
@@ -174,24 +119,59 @@ def file(**kwargs):
     # Pass this device and patient info to the preprocess function
     kwargs["device"] = device
     '''
-    # Pass the ROI info
+    # Check if ROI locations are valid
     roi_locations = []
     for roi_location in kwargs["roi_locations"]:
         try:
-            roi_locations.append(int(ROI_MAP[roi_location]))
+            roi_locations.append(int(ROI_WORD_TO_NUM_MAP[roi_location]))
         except KeyError:
             logging.warning(f"Unrecognized ROI location {roi_location}. Skipping this ROI")
     
+    # Check if there are any valid ROI locations
     if not roi_locations:
         raise Exception("No valid ROI locations provided")
 
     kwargs["roi_locations"] = roi_locations
 
+    roi_data = get_roi_data(process_video, **kwargs)
+
+
+@click.group()
+def video_type():
+    """
+    Argument that specifies whether the analysis will be run on a saved video file
+    or the live Raspberry Pi camera stream
+    """
+    pass
+
+
+@video_type.command()
+@click.argument("filename", nargs=1)
+@click.argument("roi_locations", nargs=-1)
+@click.option("--matrix_decomposition", is_flag=True)
+@click.option("--database", is_flag=True)
+def video_file(**kwargs):
+    output_dir = video_file_cmd(**kwargs)
+
+
+def video_file_cmd(**kwargs):
+    """
+    For testing and QA purposes only -- run the preprocessing pipeline
+    on an input video. 
+    
+    Args:
+        filename:               (str) filepath to the .h264 or .mp4 video file
+        roi_locations:          (str) to specify which ROIs to select
+        matrix_decomposition:   (bool) a flag for which preprocess analysis to use, and 
+                                therefore how to save the ROI data
+        database:               (bool) a flag for whether to save the data to the Azure database
+                                or as a file on the local machine
+    """
     # Check that the file exists
     if not os.path.exists(kwargs["filename"]):
         raise Exception("The supplied file does not exist")
+    
     filename = kwargs["filename"]
-
     # If this is the raw data, convert to MP4
     if filename.endswith(".h264"):
         logging.info("Creating mp4 from h264")
@@ -199,50 +179,56 @@ def file(**kwargs):
         cmd = f"MP4Box -fps 30 -add {filename} {mp4_file}"
         subprocess.check_call(cmd, shell=True)
     elif filename.endswith(".mp4"):
+        logging.info("MP4 file already exists")
         mp4_file = filename
     else:
         raise Exception("Unrecognized file format")
 
     kwargs["filename"] = mp4_file
 
-    # Preprocess the data
-    run_preprocess(**kwargs)
+    process_video = ProcessVideo(
+        filename=kwargs["filename"],
+        matrix_decomposition=kwargs["matrix_decomposition"]
+    )
+
+    run_preprocess(process_video, **kwargs)
+
+    # Print to consolde for local_pipeline output
+    print(process_video.base_dest_dir)
+    return process_video.base_dest_dir
 
 
-@input_type.command()
-def stream():
+@video_type.command()
+@click.argument("roi_locations", nargs=-1)
+@click.option("--matrix_decomposition", is_flag=True)
+@click.option("--database", is_flag=True)
+@click.option("--data_dir", required=False, default=os.getcwd())
+def video_stream(**kwargs):
+    output_dir = video_stream_cmd(**kwargs)
+
+
+def video_stream_cmd(**kwargs):
     """
-    Process images from a live stream
-    """
-    pass
-
-
-def run_preprocess(**kwargs):
-    """
-    Processes the data and then transmits to the VM for analysis
+    For production and demo runs. Runs the preprocessing pipeline on the live stream feed 
+    from the Raspberry Pi 
 
     Args:
-        kwargs: (dict) contains filename, which is the full path to the
-                video file
+        roi_locations:          (str) to specify which ROIs to select
+        matrix_decomposition:   (bool) a flag for which preprocess analysis to use, and 
+                                therefore how to save the ROI data
+        database:               (bool) a flag for whether to save the data to the Azure database
+                                or as a file on the local machine
     """
-    # Image Processing
-    data = get_video_roi_data(kwargs["filename"], kwargs["roi_locations"], kwargs["matrix_decomposition"])
+    from camera import ProcessStream
+    process_video = ProcessStream(
+        matrix_decomposition=kwargs["matrix_decomposition"],
+        data_dir=kwargs["data_dir"]
+    )
+
+    run_preprocess(process_video, **kwargs)
     
-    # Add the data to the database
-    '''
-    for roi in data:
-        new_roi = spectrum_api.get_or_create(
-            "rois",
-            device=kwargs["device"]["id"],
-            location_id=roi["location_id"],
-            red_data=str(roi["red_data"]),
-            green_data=str(roi["green_data"]),
-            blue_data=str(roi["blue_data"]),
-            collection_time=roi["collection_time"],
-            batch_id=roi["batch_id"]
-        )
-        '''
-    
+    return process_video.data_dir
+
 
 if __name__=='__main__':
-    input_type()
+    video_type()

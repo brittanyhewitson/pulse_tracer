@@ -14,32 +14,16 @@ import numpy as np
 from scipy.signal import butter, filtfilt
 from sklearn.decomposition import FastICA
 
-import sq_stft_utils as sq
+import analysis.sq_stft_utils as sq
+
+from templates import (
+    LOGGING_FORMAT,
+    ROI_NUM_TO_WORD_MAP
+)
 
 
 # Set up logging
-LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 logging.basicConfig(format=LOGGING_FORMAT, stream=sys.stderr, level=logging.INFO)
-
-ROI_MAP = {
-    "31":"right_cheek",
-    "35":"left_cheek",
-    "27":"upper_nose",
-    "28":"mid_upper_nose",
-    "29":"mid_lower_nose",
-    "30":"lower_nose",
-    "17":"left_outer_brow",
-    "18":"left_mid_outer_brow",
-    "19":"left_mid_brow",
-    "20":"left_mid_inner_brow",
-    "21":"left_inner_brow",
-    "22":"right_inner_brow",
-    "23":"right_mid_inner_brow",
-    "24":"right_mid_brow",
-    "25":"right_mid_outer_brow",
-    "26":"right_outer_brow",
-    "99":"full_face"
-}
 
 
 class MatrixAnalysis(object):
@@ -55,13 +39,12 @@ class MatrixAnalysis(object):
         roi_data = {}
         for roi in self.data:
             # Data is a list of dictionaries
-            location_id = ROI_MAP[str(roi["location_id"])]
+            location_id = ROI_NUM_TO_WORD_MAP[str(roi["location_id"])]
             try:
                 roi_data[location_id].append(roi["red_data"])
             except KeyError:
                 roi_data[location_id] = []
                 roi_data[location_id].append(roi["red_data"])
-
         ppg_data=np.array([np.array(xi) for key, xi in roi_data.items()])
         ppg_data = ppg_data.astype(int)
 
@@ -294,11 +277,15 @@ class FDAnalysis(object):
         normalized = self.normalize(mean, std, red_average)
         
         # Remove outliers, NaNs and 0's
+        mean_value = normalized[~np.isnan(normalized)].mean()
+        nans = np.isnan(normalized)
+        for nan in nans:
+            normalized[nan] = mean_value
         q75, q25 = np.percentile(normalized, [75 ,25])
         iqr = q75 - q25
         lower_outlier = q25 - 1.5*iqr
         upper_outlier = q75 + 1.5*iqr
-        mean_value = normalized.mean()
+        #mean_value = normalized[~np.isnan(normalized)].mean()
         for i in range(normalized.shape[0]):
             if normalized[i] > upper_outlier or normalized[i] < lower_outlier:
                 normalized[i] = mean_value

@@ -1,3 +1,5 @@
+import re
+import os
 import sys
 import json
 import click
@@ -7,11 +9,12 @@ import numpy as np
 
 from dbclient.spectrum_metrics import SpectrumApi
 from analysis.analyses import FDAnalysis, MatrixAnalysis
-
-
+from templates import (
+    TIMEZONE,
+    LOGGING_FORMAT
+)
 
 # Set up logging
-LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 logging.basicConfig(format=LOGGING_FORMAT, stream=sys.stderr, level=logging.INFO)
 
 
@@ -21,10 +24,16 @@ def preprocessing_algorithm():
 
 
 @preprocessing_algorithm.command()
-@click.argument("json_file", nargs=1)
+@click.argument("json_filepath", nargs=1)
 @click.argument("batch_id", nargs=1)
 @click.option("--database", is_flag=True)
 def matrix_decomposition(**kwargs):
+    """
+    """
+    matrix_decomposition_cmd(**kwargs)
+
+
+def matrix_decomposition_cmd(**kwargs):
     """
     """
     if kwargs["database"]:
@@ -36,9 +45,21 @@ def matrix_decomposition(**kwargs):
             batch_id=kwargs["batch_id"]
         )
     else:
-        # Get the data from the JSON file
-        with open(kwargs["json_file"], "r") as json_file:
-            data = json.load(json_file)
+        batch_re = r"^[\w]*(B\d{5,})[\w]*.json$"
+        # Get the data from the JSON filepath
+        data = []
+        for filename in os.listdir(kwargs["json_filepath"]):
+            if filename.endswith(".json"):
+                full_path = os.path.join(kwargs["json_filepath"], filename)
+                with open(full_path, "r") as json_file:
+                    tmp_data = json.load(json_file)
+                # Get the batch ID for this data
+                if re.match(batch_re, filename, re.I):
+                    batch_id = re.match(batch_re, filename, re.I).group(1)
+                    for json_data in tmp_data:
+                        data.append(json_data)
+                else:
+                    logging.warning(f"Could not find a batch ID -- skipping JSON file {filename}") 
 
     # Preprocess the data
     roi_analysis = MatrixAnalysis(data=data)
@@ -53,10 +74,16 @@ def matrix_decomposition(**kwargs):
 
 
 @preprocessing_algorithm.command()
-@click.argument("json_file", nargs=1)
+@click.argument("json_filepath", nargs=1)
 @click.argument("batch_id", nargs=1)
 @click.option("--database", is_flag=True)
 def fd_bss(**kwargs):
+    """
+    """
+    fd_bss_cmd(**kwargs)
+
+
+def fd_bss_cmd(**kwargs):
     """
     """
     if kwargs["database"]:
@@ -68,9 +95,21 @@ def fd_bss(**kwargs):
             batch_id=kwargs["batch_id"]
         )
     else:
-        # Get the data from the JSON file
-        with open(kwargs["json_file"], "r") as json_file:
-            data = json.load(json_file)
+        batch_re = r"^[\w]*(B\d{5,})[\w]*.json$"
+        # Get the data from the JSON filepath
+        data = []
+        for filename in os.listdir(kwargs["json_filepath"]):
+            if filename.endswith(".json"):
+                full_path = os.path.join(kwargs["json_filepath"], filename)
+                with open(full_path, "r") as json_file:
+                    tmp_data = json.load(json_file)
+                # Get the batch ID for this data
+                if re.match(batch_re, filename, re.I):
+                    batch_id = re.match(batch_re, filename, re.I).group(1)
+                    for json_data in tmp_data:
+                        data.append(json_data)
+                else:
+                    logging.warning(f"Could not find a batch ID -- skipping JSON file {filename}")  
 
     # Preprocess the data
     roi_analysis = FDAnalysis(data=data)
