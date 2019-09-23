@@ -1,3 +1,4 @@
+import os
 import sys
 import cv2
 import dlib
@@ -10,38 +11,36 @@ import matplotlib.pyplot as plt
 from math import floor, sqrt
 from datetime import datetime
 
+from templates import (
+    LOGGING_FORMAT,
+    TIMEZONE,
+    SOFTWARE_DIR
+)
+
+
 # Set up logging
-LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 logging.basicConfig(format=LOGGING_FORMAT, stream=sys.stderr, level=logging.INFO)
 
 
-class ProcessStream(object):
-    def __init__(self):
-        pass
-
-
-class ProcessVideo(object):
-    def __init__(self, filename, matrix_decomposition):
-        self.predictor = dlib.shape_predictor("../data/shape_predictor_68_face_landmarks.dat")
+class Process(object):
+    def __init__(self, matrix_decomposition):
+        self.predictor = dlib.shape_predictor(os.path.join(SOFTWARE_DIR, "data/shape_predictor_68_face_landmarks.dat"))
         self.model = cv2.dnn.readNetFromCaffe(
-            '../data/deploy.prototxt.txt', 
-            '../data/res10_300x300_ssd_iter_140000.caffemodel'
+            os.path.join(SOFTWARE_DIR,'data/deploy.prototxt.txt'), 
+            os.path.join(SOFTWARE_DIR,'data/res10_300x300_ssd_iter_140000.caffemodel')
         )
-        self.video = cv2.VideoCapture(filename)  
-        #self.trained_classifiers = []
         self.colors = [
             (0, 255, 0),  # Green
             (255, 0, 0),  # Blue
             (0, 0, 255),  # Red
             (255, 0, 255) # Magenta
         ]
-
         self.rois = []
         self.frame_time = 0
         self.frame = []
         self.gray_image = []
         self.batch_id = ""
-        self.matrix_decomposition = matrix_decomposition
+        self.matrix_decomposition = matrix_decomposition 
 
     def rotate_image(self):
         rows, cols, color = self.frame.shape
@@ -107,8 +106,7 @@ class ProcessVideo(object):
             )
             return faces
 
-
-    def get_roi(self, landmarks, landmark_range, roi_side, vert_translation, hor_translation):
+    def get_roi(self, landmarks, landmark_range, roi_side, vert_translation, hor_translation, batch_id):
         for n in landmark_range:
             x_n = landmarks.part(n).x
             y_n = landmarks.part(n).y
@@ -116,7 +114,7 @@ class ProcessVideo(object):
 
             if self.matrix_decomposition:
                 roi = {
-                    'batch_id': self.batch_id,
+                    'batch_id': batch_id,
                     'collection_time': self.frame_time,
                     'location_id': n,
                     'red_data': str(self.frame[x_n, y_n, 2]),
@@ -134,7 +132,7 @@ class ProcessVideo(object):
                 cv2.rectangle(self.frame, (x1, y1), (x2, y2), (255, 255, 0), 2)
 
                 roi = {
-                    'batch_id': self.batch_id,
+                    'batch_id': batch_id,
                     'collection_time': self.frame_time,
                     'location_id': n,
                     'red_data': self.frame[x2:x1, y2:y1, 2].tolist(),
@@ -143,9 +141,8 @@ class ProcessVideo(object):
                 }
                 if n in self.roi_locations:
                     self.rois.append(roi)
-            
 
-    def get_landmarks(self, faces, roi_locations):
+    def get_landmarks(self, faces, roi_locations, batch_id):
         self.roi_locations = roi_locations
         for (x0, y0, x1, y1) in faces:
             face = dlib.rectangle(x0, y0, x1, y1)
@@ -163,7 +160,8 @@ class ProcessVideo(object):
                 range(27, 31),
                 roi_side, 
                 forehead_vert_translation,
-                0
+                0,
+                batch_id
             )
         
             # Get the ROI for the forehead
@@ -172,7 +170,8 @@ class ProcessVideo(object):
                 range(17, 27),
                 roi_side, 
                 -forehead_vert_translation,
-                0
+                0,
+                batch_id
             )
 
             # Get the ROI for the left cheek
@@ -181,7 +180,8 @@ class ProcessVideo(object):
                 range(31, 32),
                 roi_side, 
                 0,
-                -cheek_hor_translation
+                -cheek_hor_translation,
+                batch_id
             )
 
             # Get the ROI for the right cheek
@@ -190,7 +190,42 @@ class ProcessVideo(object):
                 range(35, 36),
                 roi_side,
                 0,
-                cheek_hor_translation
+                cheek_hor_translation,
+                batch_id
             )
             break
+
+
+class ProcessVideo(Process):
+    def __init__(self, filename, matrix_decomposition):
+        Process.__init__(self, matrix_decomposition)
+        self.video = cv2.VideoCapture(filename) 
+        self.base_dest_dir = filename.strip(".mp4")
+        if matrix_decomposition == True:
+            if not self.base_dest_dir.endswith("_matrix_decomposition"):
+                self.base_dest_dir = self.base_dest_dir + "_matrix_decomposition"
+
+    def release(self):
+        self.video.release()
+        cv2.destroyAllWindows() 
+
+    def get_frame(self):
+        ret, frame = self.video.read() 
+        return frame
+
+    def save_data(self, database, batch_id):
+        batch_id_str = "".join(["B", format(batch_id, "05")])
+        if database:
+            print("database")
+        else:
+            # Add batch ID to destination filename
+            # Check if the base directory exists
+            if not os.path.exists(self.base_dest_dir):
+                os.makedirs(self.base_dest_dir)
             
+            filename = self.base_dest_dir.split("/")[-1]
+            filename = "_".join([filename, batch_id_str])
+            dest_file = os.path.join(self.base_dest_dir, filename)
+            with open(f"{dest_file}.json", "w") as filename:
+                json.dump(self.rois, filename)
+                      
