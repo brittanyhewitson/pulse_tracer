@@ -5,7 +5,8 @@ import pytz
 LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 TIMEZONE = pytz.timezone("Canada/Pacific")
 SOFTWARE_DIR = os.environ.get("PULSE_TRACER_SOFTWARE_DIR")
-PI_IP = "192.168.1.87"
+#PI_IP = "192.168.1.87"
+PI_IP = "142.58.160.36"
 
 # Choices and Lists
 LOCATION_ID_CHOICES = [
