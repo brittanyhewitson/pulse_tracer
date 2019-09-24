@@ -16,3 +16,11 @@ class DataSummaryView(generic.TemplateView):
     def get(self, request, **kwargs):
         context = {}
         return render(request, self.template_name, context)
+
+
+class HealthCareProviderDetail(generic.TemplateView):
+    template_name = 'pulse_tracer/health_care_provider_detail.html'
+
+    def get(self, request, **kwargs):
+        context = {}
+        return render(request, self.template_name, context)
