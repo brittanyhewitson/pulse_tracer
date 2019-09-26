@@ -230,5 +230,5 @@ class ProcessVideo(Process):
             with open(f"{dest_file}.json", "w") as write_filename:
                 json.dump(self.rois, write_filename)
 
-            return dest_file
+            return dest_file, filename + ".json"
                       
