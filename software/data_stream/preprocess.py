@@ -35,6 +35,16 @@ def get_roi_data(process_video, **kwargs):
     #current_datetime = datetime.now(TIMEZONE)
     #process_video.batch_id = current_datetime.strftime("%Y%m%d%H%M%S")
     batch_id = 0
+    transfer = False
+
+    try:
+        if kwargs["remote_user"] and kwargs["remote_output_dir"] and kwargs["remote_ip"]:
+            user = kwargs["remote_user"]
+            remote_output_dir = kwargs["remote_output_dir"]
+            ip = kwargs["remote_ip"]
+            transfer = True
+    except KeyError:
+        pass
 
     # Time the algorithm
     start = timeit.default_timer()
@@ -68,7 +78,11 @@ def get_roi_data(process_video, **kwargs):
         num_frames += 1
         if num_frames == 10:
             num_frames = 0
-            process_video.save_data(kwargs["database"], batch_id)
+            dest_filepath, dest_filename = process_video.save_data(kwargs["database"], batch_id)
+            if transfer:
+                remote_dest_file = os.path.join(remote_output_dir, dest_filename)
+                cmd = f"rsync -avPL {dest_filepath} {user}@{ip}:{remote_dest_file}"
+                subprocess.check_call(cmd, shell=True)
             process_video.rois = []
             batch_id += 1
 
@@ -120,6 +134,8 @@ def run_preprocess(process_video, **kwargs):
     kwargs["device"] = device
     '''
     # Check if ROI locations are valid
+    if kwargs["roi_locations"][0] == "full_face":
+        kwargs["roi_locations"] = LOCATION_ID_CHOICES[:-1]
     roi_locations = []
     for roi_location in kwargs["roi_locations"]:
         try:
@@ -203,6 +219,9 @@ def video_file_cmd(**kwargs):
 @click.option("--matrix_decomposition", is_flag=True)
 @click.option("--database", is_flag=True)
 @click.option("--data_dir", required=False, default=os.getcwd())
+@click.option("--remote_output_dir")
+@click.option("--remote_ip")
+@click.option("--remote_user")
 def video_stream(**kwargs):
     output_dir = video_stream_cmd(**kwargs)
 

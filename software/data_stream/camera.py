@@ -76,5 +76,7 @@ class ProcessStream(Process):
             # Add batch ID to destination filename
             filename = "_".join([self.output_filename, batch_id_str])
             dest_file = os.path.join(self.data_dir, filename)
-            with open(f"{dest_file}.json", "w") as filename:
-                json.dump(self.rois, filename)
+            with open(f"{dest_file}.json", "w") as write_filename:
+                json.dump(self.rois, write_filename)
+
+            return dest_file, filename + ".json"

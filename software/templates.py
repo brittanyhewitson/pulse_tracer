@@ -5,8 +5,9 @@ import pytz
 LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 TIMEZONE = pytz.timezone("Canada/Pacific")
 SOFTWARE_DIR = os.environ.get("PULSE_TRACER_SOFTWARE_DIR")
-#PI_IP = "192.168.1.87"
-PI_IP = "142.58.160.36"
+#PI_IP = "192.168.1.87" # rpi3 at home
+#PI_IP = "142.58.160.36"
+PI_IP = "142.58.166.83"
 
 # Choices and Lists
 LOCATION_ID_CHOICES = [
@@ -26,6 +27,7 @@ LOCATION_ID_CHOICES = [
     "right_mid_brow",
     "right_mid_outer_brow",
     "right_outer_brow",
+    "full_face"
 ]
 PREPROCESS_CHOICES = [
     "fd_bss",
@@ -68,5 +70,4 @@ ROI_NUM_TO_WORD_MAP = {
     "24":"right_mid_brow",
     "25":"right_mid_outer_brow",
     "26":"right_outer_brow",
-    "99":"full_face"
 }
