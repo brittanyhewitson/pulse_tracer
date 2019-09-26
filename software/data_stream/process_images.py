@@ -226,9 +226,9 @@ class ProcessVideo(Process):
             
             filename = self.base_dest_dir.split("/")[-1]
             filename = "_".join([filename, batch_id_str])
-            dest_file = os.path.join(self.base_dest_dir, write_filename)
+            dest_file = os.path.join(self.base_dest_dir, filename)
             with open(f"{dest_file}.json", "w") as write_filename:
-                json.dump(self.rois, filename)
+                json.dump(self.rois, write_filename)
 
             return dest_file
                       
