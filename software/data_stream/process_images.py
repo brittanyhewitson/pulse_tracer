@@ -112,6 +112,7 @@ class Process(object):
             y_n = landmarks.part(n).y
             cv2.circle(self.frame, (x_n, y_n), 2, (255, 0, 0), -1)
 
+            # TODO: ADD ERROR CHEKCING IF COORDINATE IS OUT OF FRAME
             if self.matrix_decomposition:
                 roi = {
                     'batch_id': batch_id,
@@ -225,7 +226,9 @@ class ProcessVideo(Process):
             
             filename = self.base_dest_dir.split("/")[-1]
             filename = "_".join([filename, batch_id_str])
-            dest_file = os.path.join(self.base_dest_dir, filename)
-            with open(f"{dest_file}.json", "w") as filename:
+            dest_file = os.path.join(self.base_dest_dir, write_filename)
+            with open(f"{dest_file}.json", "w") as write_filename:
                 json.dump(self.rois, filename)
+
+            return dest_file
                       
