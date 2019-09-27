@@ -110,6 +110,8 @@ class Process(object):
         for n in landmark_range:
             x_n = landmarks.part(n).x
             y_n = landmarks.part(n).y
+            if x_n >= 640 or y_n >= 480:
+                continue
             cv2.circle(self.frame, (x_n, y_n), 2, (255, 0, 0), -1)
 
             # TODO: ADD ERROR CHEKCING IF COORDINATE IS OUT OF FRAME

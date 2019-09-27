@@ -11,7 +11,8 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
-from scipy.signal import butter, filtfilt
+from scipy.signal import butter, filtfilt, savgol_filter, find_peaks
+from scipy.interpolate import interp1d
 from sklearn.decomposition import FastICA
 
 import analysis.sq_stft_utils as sq
@@ -241,7 +242,34 @@ class MatrixAnalysis(object):
         """
         """
         # TODO
-        return "TODO"
+
+        # Bandpass the signal 
+        filtered = self.butter_bandpass(self.ppg_data, 0.067, 1, 5)
+
+        filtered = savgol_filter(filtered, 11, 1)
+
+        try:
+            # Find peaks
+            peaks = find_peaks(filtered, height=0)
+
+            # Interpolate between peaks to find envelope
+            model = interp1d(
+                peaks[0], 
+                peaks[1]['peak_heights'], 
+                kind='cubic', 
+                bounds_error=False, 
+                fill_value=0.0
+            )
+
+            resp_signal = [model(x) for x in range(len(filtered))]
+
+            # Calculate respiratory rate
+            breath_num = len(find_peaks(resp_signal))
+            breath_per_min = breath_num/(len(resp_signal)/(self.frame_rate*60))
+        except:
+            return "RR Failed"
+        
+        return breath_per_min
 
 
 
@@ -307,7 +335,7 @@ class FDAnalysis(object):
             red_source = []
         return red_source
 
-    def filter(self, source_signal, lowcut, highcut, order):
+    def butter_bandpass(self, source_signal, lowcut, highcut, order):
         """
         """
         nyq = 0.5 * self.frame_rate
@@ -315,7 +343,7 @@ class FDAnalysis(object):
         high = highcut / nyq
         b, a = butter(3, [low, high], btype="bandpass")
         filtered_signal = filtfilt(b, a, source_signal, axis=0)
-        self.ppg_data = filtered_signal
+        return filtered_signal
 
     def fourier_transform(self, filtered_signal):
         """
@@ -348,10 +376,10 @@ class FDAnalysis(object):
         # ICA
         source_signal = self.get_source(normalized_signal)
         if len(source_signal) == 0:
-            return "HR Failed"
+            raise Exception("HR Failed")
 
         # Bandpass filter the signal
-        self.filter(
+        self.ppg_data = self.butter_bandpass(
             source_signal=normalized_signal, 
             lowcut=0.7, 
             highcut=4,
@@ -376,4 +404,34 @@ class FDAnalysis(object):
 
     # TODO: Add Corey's RR algorithm here
     def get_rr(self):
-        return "TODO"
+        """
+        """
+        # TODO
+
+        # Bandpass the signal 
+        filtered = self.butter_bandpass(self.ppg_data, 0.067, 1, 5)
+
+        filtered = savgol_filter(filtered, 11, 1)
+
+        try:
+            # Find peaks
+            peaks = find_peaks(filtered, height=0)
+
+            # Interpolate between peaks to find envelope
+            model = interp1d(
+                peaks[0], 
+                peaks[1]['peak_heights'], 
+                kind='cubic', 
+                bounds_error=False, 
+                fill_value=0.0
+            )
+
+            resp_signal = [model(x) for x in range(len(filtered))]
+
+            # Calculate respiratory rate
+            breath_num = len(find_peaks(resp_signal))
+            breath_per_min = breath_num/(len(resp_signal)/(self.frame_rate*60))
+        except:
+            return "RR Failed"
+        
+        return breath_per_min
