@@ -199,20 +199,17 @@ class MatrixAnalysis(object):
         stft_vp = stft_vp[::-1,:]
 
         # Plot Extracted Signal
+        
         nt_i =0
         nt_f = 1200
         plt.plot(t_v[nt_i:nt_f],filtered_signal[nt_i:nt_f]*-1,linewidth = 3)
-        plt.subplot(2,1,1)
         plt.title('Extracted Signal',fontsize = 25)
         plt.ylabel('A.U.',fontsize = 25)
-        plt.yticks([-0.05,0,0.05])
-        plt.xticks([0,5,10,15,20,25,30])
         ax = plt.gca()
         ax.set_facecolor((1.0, 1, 1))
         plt.grid('on',color = 'gray')
         plt.show()
         plt.clf()
-
         self.ppg_data = filtered_signal
 
     def get_hr(self):
@@ -227,9 +224,11 @@ class MatrixAnalysis(object):
             "freq": freq,
             "ft": abs(ft)
         })
+        '''
         plt.plot(fourier["freq"], fourier["ft"])
         plt.show()
         plt.clf()
+        '''
         positive_signal = fourier[fourier["freq"] >= 0]
         max_row = positive_signal.loc[positive_signal["ft"].idxmax()]
         peak_value = max_row["freq"]
