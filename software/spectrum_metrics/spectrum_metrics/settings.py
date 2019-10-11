@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'django_filters',
     'django_extensions',
     'drf_yasg',
+    'bootstrap_datepicker_plus',
+    'bootstrap4',
 ]
 
 MIDDLEWARE = [
@@ -56,6 +58,10 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+BOOTSTRAP4 = {
+    'include_jquery': True,
+}
 
 ROOT_URLCONF = 'spectrum_metrics.urls'
 
@@ -80,7 +86,7 @@ WSGI_APPLICATION = 'spectrum_metrics.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
-
+'''
 DATABASES = {
     'default': {
         'ENGINE': 'sql_server.pyodbc',
@@ -93,6 +99,18 @@ DATABASES = {
             'driver': 'ODBC Driver 17 for SQL Server',
             'unicode_results': True,
         },
+    },
+}
+'''
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'spectrum_test',
+        'USER': os.environ.get('DATABASE_USER'),
+        'PASSWORD': os.environ.get('DATABASE_PASSWORD'),
+        'HOST': 'localhost',
+        'PORT': '5432',
     },
 }
 
@@ -143,3 +161,8 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',),
     'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework.authentication.SessionAuthentication',)
 }
+
+LOGIN_REDIRECT_URL = '/pulse_tracer/'
+LOGOUT_REDIRECT_URL = '/account/login/'
+
+AUTH_USER_MODEL = "pulse_tracer.User"

@@ -7,6 +7,7 @@ from pulse_tracer.models import(
     HealthCare,
     HeartRate,
     RespiratoryRate,
+    User
 )
 
 class BaseFilterSet(filters.FilterSet):
@@ -42,15 +43,29 @@ class ROIFilters(filters.FilterSet):
         }
 
 
+class UserFilters(filters.FilterSet):
+    class Meta:
+        model = User
+        fields = {
+            "id": ["exact"],
+            "username": ["exact"],
+            "first_name": ["exact"],
+            "last_name": ["exact"],
+        }
+
+
 class PatientFilters(filters.FilterSet):
     class Meta:
         model = Patient
         fields = {
             "id": ["exact"],
-            "name": ["exact"],
-            "health_care_provider": ["exact"],
+            "user__username": ["exact"],
+            "user__first_name": ["exact"],
+            "user__last_name": ["exact"],
             "health_care_provider__id": ["exact"],
-            "health_care_provider__name": ["exact"],
+            "health_care_provider__user__username": ["exact"],
+            "health_care_provider__user__first_name": ["exact"],
+            "health_care_provider__user__last_name": ["exact"],
             "device": ["exact"],
             "device__id": ["exact"],
         }
@@ -61,9 +76,9 @@ class HealthCareFilters(filters.FilterSet):
         model = HealthCare
         fields = {
             "id": ["exact"],
-            "name": ["exact"],
-            "patient": ["exact"],
-            "patient__id": ["exact"]
+            "user__username": ["exact"],
+            "user__first_name": ["exact"],
+            "user__last_name": ["exact"],
         }
 
 

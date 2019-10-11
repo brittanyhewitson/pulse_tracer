@@ -6,10 +6,12 @@ from .models import(
     Patient, 
     HealthCare,
     HeartRate,
-    RespiratoryRate
+    RespiratoryRate,
+    User,
 )
 
 # Register your models here.
+admin.site.register(User)
 admin.site.register(Device)
 admin.site.register(ROI)
 admin.site.register(Patient)

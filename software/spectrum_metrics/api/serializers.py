@@ -6,6 +6,7 @@ from pulse_tracer.models import(
     HealthCare,
     HeartRate,
     RespiratoryRate,
+    User,
 )
 
 
@@ -29,7 +30,25 @@ class ROICreateSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "username",
+            "first_name",
+            "last_name"
+        ]
+
+
 class HealthCareSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    class Meta:
+        model = HealthCare
+        fields = "__all__"
+
+
+class HealthCareCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = HealthCare
         fields = "__all__"
@@ -38,6 +57,7 @@ class HealthCareSerializer(serializers.ModelSerializer):
 class PatientSerializer(serializers.ModelSerializer):
     health_care_provider = HealthCareSerializer(many=True, read_only=True)
     device = DeviceSerializer(read_only=True)
+    user = UserSerializer(read_only=True)
     
     class Meta:
         model = Patient

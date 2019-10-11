@@ -23,6 +23,7 @@ router.register(r'patients', views.PatientViewSet)
 router.register(r'health_care_providers', views.HealthCareViewSet)
 router.register(r'heart_rates', views.HeartRateViewSet)
 router.register(r'respiratory_rates', views.RespiratoryRateViewSet)
+router.register(r'users', views.UserViewSet)
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.

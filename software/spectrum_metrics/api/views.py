@@ -6,8 +6,10 @@ from .serializers import (
     PatientSerializer,
     PatientCreateSerializer,
     HealthCareSerializer,
+    HealthCareCreateSerializer,
     HeartRateSerializer,
-    RespiratoryRateSerializer
+    RespiratoryRateSerializer,
+    UserSerializer
 )
 
 from pulse_tracer.models import(
@@ -17,6 +19,7 @@ from pulse_tracer.models import(
     HealthCare,
     HeartRate,
     RespiratoryRate,
+    User
 )
 
 from api.filters import(
@@ -25,7 +28,8 @@ from api.filters import(
     PatientFilters,
     HealthCareFilters,
     HeartRateFilters,
-    RespiratoryRateFilters
+    RespiratoryRateFilters,
+    UserFilters,
 )
 
 # TODO: Add filters.py with all filters for each model
@@ -73,9 +77,26 @@ class HealthCareViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows users to be viewed or edited.
     """
+    class Meta:
+        ordering = ['-id']
     queryset = HealthCare.objects.all()
     serializer_class = HealthCareSerializer
     filter_class = HealthCareFilters
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return HealthCareCreateSerializer
+
+        return HealthCareSerializer
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows users to be viewed or edited.
+    """
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    filter_class = UserFilters
 
 
 class HeartRateViewSet(viewsets.ModelViewSet):

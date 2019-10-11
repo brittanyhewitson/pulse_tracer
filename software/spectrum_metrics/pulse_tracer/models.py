@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import AbstractUser
 
 # Create your models here.
 class Device(models.Model):
@@ -82,14 +83,22 @@ class ROI(models.Model):
         return "_".join(["ROI", format(self.id, "04")])
 
 
+class User(AbstractUser):
+    class Meta:
+        ordering = ['id']
+
+    is_patient = models.BooleanField(default=False)
+    is_health_care = models.BooleanField(default=False)
+
+
 class Patient(models.Model):
     # Patient ID (PK)
-
-    # Name
-    name = models.CharField(
-        max_length=100
+    user = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE,
+        #primary_key=True
     )
-
+    
     # Date of Birth
     birth_date = models.DateField(
     )
@@ -137,10 +146,11 @@ class HealthCare(models.Model):
         ("PHARM", "Pharmacist"),
         ("RT", "Respiratory Therapist"),
     ]
-
-    # Name
-    name = models.CharField(
-        max_length=100
+    
+    user = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE,
+        #primary_key=True
     )
 
     role = models.CharField(

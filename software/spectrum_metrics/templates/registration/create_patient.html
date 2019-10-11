@@ -1,0 +1,27 @@
+{% extends 'base_view.html' %}
+
+{% block content %}
+    <div class="container">
+        <h2>Sign Up As a Patient</h2>
+        <form method="post">
+            {% csrf_token %}
+            {% load bootstrap4 %}
+			{% bootstrap_css %}
+			{% bootstrap_javascript jquery='full' %}
+			{{ form.media }}
+            {% for field in form %}
+                <p>
+                {{ field.label_tag }}<br>
+                {{ field }}
+                {% if field.help_text %}
+                    <small style="color: grey">{{ field.help_text }}</small>
+                {% endif %}
+                {% for error in field.errors %}
+                    <p style="color: red">{{ error }}</p>
+                {% endfor %}
+                </p>
+            {% endfor %}
+            <button type="submit" class="btn btn-success">Sign Up</button>
+        </form>
+    </div>
+{% endblock %}
