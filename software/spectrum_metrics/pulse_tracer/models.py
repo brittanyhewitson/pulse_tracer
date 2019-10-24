@@ -89,6 +89,8 @@ class User(AbstractUser):
 
     is_patient = models.BooleanField(default=False)
     is_health_care = models.BooleanField(default=False)
+    
+    USERNAME_FIELD = 'username'
 
 
 class Patient(models.Model):

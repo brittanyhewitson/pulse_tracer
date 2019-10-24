@@ -101,7 +101,7 @@ class CreatePatientView(generic.TemplateView):
                 health_care_provider = HealthCare.objects.get(pk=health_care_provider.id)
                 patient.health_care_provider.add(health_care_provider)
             patient.save()
-        return HttpResponseRedirect('/pulse_tracer/')
+        return HttpResponseRedirect(reverse("index"))
 
 
 class CreateHealthCareView(generic.TemplateView):
@@ -126,7 +126,7 @@ class CreateHealthCareView(generic.TemplateView):
             health_care = health_care_form.save(commit=False)
             health_care.user = user
             health_care.save()
-        return HttpResponseRedirect('/pulse_tracer/')
+        return HttpResponseRedirect(reverse("index"))
 
         
 def logout_view(request):
