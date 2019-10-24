@@ -2,9 +2,12 @@
 {% block content %}
     <div class="container">
         <h2>Personal Information</h2>
+        <a class="btn" href="{% url 'health_care_provider_update' %}"><i class="icon-edit"></i> Edit Profile</a>
         <div class="card">
             <div class="card-body">
-                <p class="card-text">First name: {{ health_care_provider.first_name }}</p>
+                <p class="card-text">First name: {{ health_care_provider.user.first_name }}</p>
+                <p class="card-text">Last name: {{ health_care_provider.user.last_name }}</p>
+                <p class="card-text">Role: {{ health_care_provider.get_role_display }}</p>
             </div>
         </div>
     </div>
