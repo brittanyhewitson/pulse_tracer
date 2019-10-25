@@ -1,11 +1,11 @@
+@charset "UTF-8";
+/*
 .navbar-expand-lg {
-    /*background-color: #DEFCFF;*/
     font-family: 'Lato-light', sans-serif;
-    
 }
+*/
 
-div.container {
-    /*border: medium none !important;*/
+div .container {
     float: center;
     border: 1px solid #DCDCDC;
     margin: auto;
@@ -13,7 +13,8 @@ div.container {
     padding: 20px;
     padding-top: 20px;
     width: 98%;
-    background-color: #EAE6E3;
+    background-color: rgb(255, 255, 255);
     border-radius: 5px;
     box-shadow: 0 0 2px #DCDCDC;
 }
+
