@@ -1,9 +1,11 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
+from bootstrap_datepicker_plus import DatePickerInput
 
 from .models import(
     User,
     HealthCare,
+    Patient
 )
 
 
@@ -39,3 +41,43 @@ class HealthCareUpdateForm(forms.ModelForm):
         fields = [
             'role'
         ]
+
+
+class PatientUpdateForm(forms.ModelForm):
+    birth_date = forms.DateField(
+    )
+    weight = forms.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        help_text='Weight in kg.'
+    )
+    height = forms.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        help_text='Height in cm.'
+    )
+    health_conditions = forms.CharField(
+        max_length=255, 
+        required=False, 
+        help_text='Optional.'
+    )
+    health_care_provider = forms.CharField(
+        max_length=255, 
+        required=False, 
+        help_text='Name of health care provider.'
+    )
+    
+
+    class Meta:
+        model = Patient
+        fields = [
+            'birth_date',
+            'weight',
+            'height',
+            'health_conditions',
+            'health_care_provider'
+        ]
+        
+        widgets = {
+            'birth_date': DatePickerInput(format='%d/%m/%Y')
+        }

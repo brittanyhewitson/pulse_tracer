@@ -18,6 +18,7 @@ from .models import(
 from .forms import(
     UserUpdateForm,
     HealthCareUpdateForm,
+    PatientUpdateForm
 )
 
 
@@ -96,3 +97,52 @@ class PatientListView(LoginRequiredMixin, generic.ListView):
             'patients': patients
         }
         return render(request, self.template_name, context)
+    
+    
+class PatientDetailView(LoginRequiredMixin, generic.DetailView):
+    model = Patient
+    template_name = 'pulse_tracer/patient_detail.html'
+
+    def get(self, request, **kwargs):
+        patient = Patient.objects.get(user__id=request.user.id)
+        context = {
+            'patient': patient
+        }
+        return render(request, self.template_name, context)
+    
+
+class PatientUpdateView(LoginRequiredMixin, generic.UpdateView):
+    model = Patient
+    template_name = 'pulse_tracer/patient_update.html'
+
+    def get(self, request, **kwargs):
+        current_user_id = request.user.id
+        user = get_object_or_404(User, id=current_user_id)
+        patient = get_object_or_404(Patient, user__id=current_user_id)
+        user_update_form = UserUpdateForm(instance=user)
+        patient_update_form = PatientUpdateForm(instance=Patient.objects.get(user__id=current_user_id))
+        context = {
+            'patient': patient,
+            'user_form': user_update_form,
+            'patient_form': patient_update_form
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, **kwargs):
+        current_user_id = request.user.id
+        user = get_object_or_404(User, id=current_user_id)
+        user_update_form = UserUpdateForm(request.POST, instance=user)
+        patient_update_form = PatientUpdateForm(request.POST, instance=Patient.objects.get(user__id=current_user_id))
+        
+        # TODO: Do something about errors here
+        print(user_update_form.errors)
+        print(patient_update_form.errors)
+
+        if user_update_form.is_valid() and patient_update_form.is_valid():
+            user = user_update_form.save()
+            patient = patient_update_form.save(commit=False)
+            patient.user = user
+            patient.save()
+            return HttpResponseRedirect(reverse('patient'))
+            
+            
