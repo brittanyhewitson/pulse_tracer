@@ -1,0 +1,37 @@
+{% extends 'pulse_tracer/base_view.html' %}
+{% block content %}
+    <div class="container">
+        <h2>Patient Profile</h2>
+        <div class="card">
+            <div class="card-body">
+                <p class="card-text">First name: {{ patient.user.first_name }}</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <p class="card-text">Last name: {{ patient.user.last_name }}</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <p class="card-text">Birthdate: {{ patient.birth_date }}</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <p class="card-text">Height: {{ patient.height }}</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <p class="card-text">Health Conditions: {{ patient.health_conditions }}</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <p class="card-text">Health Care Provider: {{ patient.health_care_provider }}</p>
+            </div>
+        </div>
+        <a class="btn" href="{% url 'patient_update' %}"><i class="icon-edit"></i> Edit Profile</a>
+    </div>
+{% endblock %}
