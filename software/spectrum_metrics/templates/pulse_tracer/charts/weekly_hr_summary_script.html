@@ -1,0 +1,16 @@
+<script>
+    var ctx = document.getElementById("weekly_hr_summary").getContext('2d')
+    var myLineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            //labels: {{ hr_labels }},
+            datasets: [{
+                label: "Heart Rate",
+                data: {{ hr_data }},
+                borderColor: 'rgba(51, 221, 255, 1)',
+                backgroundColor: 'rgba(51, 221, 255, 0.1)',
+                borderWidth: 1,
+            }]
+        }
+    });
+</script>

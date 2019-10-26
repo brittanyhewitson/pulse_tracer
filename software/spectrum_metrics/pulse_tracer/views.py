@@ -20,13 +20,27 @@ from .forms import(
     HealthCareUpdateForm,
     PatientUpdateForm
 )
+from .utils import query_scripts
 
 
 class IndexView(LoginRequiredMixin, generic.ListView):
     template_name = 'pulse_tracer/index.html'
 
     def get(self, request, **kwargs):
-        context = {}
+        current_user_id = request.user.id
+        user = get_object_or_404(User, id=current_user_id)
+
+        if user.is_patient:
+            patient = get_object_or_404(Patient, user__id=current_user_id)
+            labels, data = query_scripts.get_weekly_summary(patient)
+        elif user.is_health_care:
+            # CHANGE THIS
+            hr_labels, hr_data, rr_data = query_scripts.get_weekly_summary(user)
+        context = {
+            "hr_labels": hr_labels,
+            "hr_data": hr_data,
+            "rr_data": rr_data,
+        }
         return render(request, self.template_name, context)
 
 
@@ -78,13 +92,16 @@ class HealthCareProviderUpdateView(LoginRequiredMixin, generic.UpdateView):
         print(user_update_form.errors)
         print(health_care_update_form.errors)
 
+        # TODO: Add a cancel button in the form view
+
         if user_update_form.is_valid() and health_care_update_form.is_valid():
             user = user_update_form.save()
             health_care_provider = health_care_update_form.save(commit=False)
             health_care_provider.user = user
             health_care_provider.save()
             return HttpResponseRedirect(reverse('health_care_provider'))
-        
+
+# TODO: Add settings page?
 
 
 # TODO: User permission required mixin here?

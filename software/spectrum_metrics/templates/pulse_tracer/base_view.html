@@ -5,8 +5,10 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         <link rel="stylesheet" type="text/css" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" crossorigin="anonymous">
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+        
         <!-- Font -->
-        <link href="https://fonts.googleapis.com/css?family=Lato:300,400|Source+Sans+Pro:300,400&display=swap" rel="stylesheet">
+        <!--<link href="https://fonts.googleapis.com/css?family=Lato:300,400|Source+Sans+Pro:300,400&display=swap" rel="stylesheet">-->
+        <link href="https://fonts.googleapis.com/css?family=Lato:100,300,400&display=swap" rel="stylesheet">
         <title>Pulse Tracer</title>
 
         <!-- Icons -->
@@ -33,9 +35,12 @@
                 padding: 6px 6px 6px 32px;
                 text-decoration: none;
                 font-size: 25px;
-                color: #818181;
+                /*color: #818181;*/
+                color: #F1F2F3;
                 display: block;
                 transition: 0.3s;
+                font-family: 'Lato', sans-serif;
+                font-weight: 300;
             }
 
             .sidenav h1 {
@@ -58,12 +63,13 @@
             }
 
             .sidenav .logo_navbar {
-                padding: 10px 10px 10px 10px;
-                position: absolute;
-                top: 0;
+                padding: 10px 10px 10px 10px;*/
+                /*position: absolute;*/
+                /*top: 0;*/
                 float: left;
-                font-size: 24px;
+                font-size: 30px;
             }
+
             .sidenav .logo_navbar:hover {
                 background-color: #111;
             }
@@ -76,7 +82,7 @@
                 padding: 8px 8px 8px 32px;
                 text-decoration: none;
                 font-size: 25px;
-                color: #818181;
+                color: #F1F2F3;
                 display: block;
                 border: none;
                 background: none;
@@ -84,19 +90,21 @@
                 text-align: left;
                 cursor: pointer;
                 outline: none;
+                font-family: 'Lato', sans-serif;
+                font-weight: 300;
             }
 
             .sidenav .dropdown-btn:active {
-                color: #FFFFFF;
+                color: #f1f1f1;
+                background-color: #818181;
             }
 
             .sidenav .dropdown-btn:hover {
-                color: #818181;
+                color: #f1f1f1;
+                background-color: #818181;
             }
-
             .dropdown-container {
                 display: none;
-                background-color: #262626;
                 padding-left: 8px;
             }
 
@@ -107,10 +115,6 @@
             .fa-caret-down {
                 float: right;
                 padding-right: 8px;
-            }
-
-            body {
-                background-color: #DEE5E7;
             }
 
             /* Style page content - use this if you want to push the page content to the right when you open the side navigation */
@@ -130,30 +134,40 @@
     <body>
         <div id="mySidenav" class="sidenav">
             <!-- Logo -->
-            <a href="{% url 'index' %}" class="logo_navbar">
-                <img src="{% static 'image/bulb.png' %}" width="25" height="35"alt=""> 
-                Pulse Tracer
-            </a>
-            <!-- Exit Icon -->
-            <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-            
-            <!-- Dropdown menu for username -->
-            <button class="dropdown-btn">{{ user.username }} 
-                <i class="fa fa-caret-down"></i>
-            </button>
-            <div class="dropdown-container">
-                <a href="#"><i class="fas fa-cog"></i> Settings</a>
-                </i><a href="#"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
-            </div>
-        
-            <!-- Remainder of the navbar depending on if the user is a health care provider or patient-->
-            {% if user.is_health_care %}
-                <a class="nav-link" href="{% url 'health_care_provider' %}">Profile</a>
-                <a class="nav-link" href="{% url 'patient_list' %}">Patients</a>
-            {% elif user.is_patient %}
-                <a href="{% url 'patient' %}">Profile</a>                
-                <a href="{% url 'data_summary' %}">Data Summary</a>
-            {% endif %}
+            {% if user.is_authenticated %}
+                <a href="{% url 'index' %}" class="logo_navbar">
+                    <img src="{% static 'image/bulb.png' %}" width="45" height="63"alt=""> 
+                    Pulse Tracer
+                </a>
+                <!-- Exit Icon -->
+                <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+
+                <!-- Dropdown menu for username -->
+                <button class="dropdown-btn">{{ user.username }} 
+                    <i class="fa fa-caret-down"></i>
+                </button>
+                <div class="dropdown-container">
+                    <a href="#"><i style="font-size: 15px;" class="fas fa-cog"></i> Settings</a>
+                    </i><a href="{% url 'logout' %}"><i style="font-size: 15px;" class="fas fa-sign-out-alt"></i> Sign Out</a>
+                </div>
+
+                <!-- Remainder of the navbar depending on if the user is a health care provider or patient-->
+                {% if user.is_health_care %}
+                    <a class="nav-link" href="{% url 'health_care_provider' %}">Profile</a>
+                    <a class="nav-link" href="{% url 'patient_list' %}">Patients</a>
+                {% elif user.is_patient %}
+                    <a href="{% url 'patient' %}">Profile</a>                
+                    <a href="{% url 'data_summary' %}">Data Summary</a>
+                {% endif %}
+            {% else %}
+                <a href="{% url 'login' %}" class="logo_navbar">
+                    <img src="{% static 'image/bulb.png' %}" width="25" height="35"alt=""> 
+                    Pulse Tracer
+                </a>
+                
+                <!-- Exit Icon -->
+                <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+            {% endif %}             
         </div>
         <div id="main">
             <span style="font-size:30px;cursor:pointer;font-family:'Lato', sans-serif;" onclick="openNav()">&#9776;</span>
