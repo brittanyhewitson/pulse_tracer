@@ -101,7 +101,40 @@ class HealthCareProviderUpdateView(LoginRequiredMixin, generic.UpdateView):
             health_care_provider.save()
             return HttpResponseRedirect(reverse('health_care_provider'))
 
-# TODO: Add settings page?
+class HealthCareProviderUpdateView(LoginRequiredMixin, generic.UpdateView):
+    model = HealthCare
+    template_name = 'pulse_tracer/health_care_provider_update.html'
+
+    def get(self, request, **kwargs):
+        current_user_id = request.user.id
+        user = get_object_or_404(User, id=current_user_id)
+        health_care_provider = get_object_or_404(HealthCare, user__id=current_user_id)
+        user_update_form = UserUpdateForm(instance=user)
+        health_care_update_form = HealthCareUpdateForm(instance=HealthCare.objects.get(user__id=current_user_id))
+        context = {
+            'health_care_provider': health_care_provider,
+            'user_form': user_update_form,
+            'healthcare_form': health_care_update_form
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, **kwargs):
+        current_user_id = request.user.id
+        user = get_object_or_404(User, id=current_user_id)
+        user_update_form = UserUpdateForm(request.POST, instance=user)
+        health_care_update_form = HealthCareUpdateForm(request.POST, instance=HealthCare.objects.get(user__id=current_user_id))
+        
+        # TODO: Do something about errors here
+        print(user_update_form.errors)
+        print(health_care_update_form.errors)
+
+        if user_update_form.is_valid() and health_care_update_form.is_valid():
+            user = user_update_form.save()
+            health_care_provider = health_care_update_form.save(commit=False)
+            health_care_provider.user = user
+            health_care_provider.save()
+            return HttpResponseRedirect(reverse('health_care_provider'))
+        
 
 
 # TODO: User permission required mixin here?
