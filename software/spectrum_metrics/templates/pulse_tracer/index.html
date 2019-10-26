@@ -1,6 +1,45 @@
 {% extends 'pulse_tracer/base_view.html' %}
 {% block content %}
-    <div class="container">
-        <p>Dashboard View</p>
+<h1>{{ user.first_name }}'s Dashboard</h1>
+<div class="card">
+    <center>
+    <h2>Weekly Summary</h2>
+    </center>
+</div>
+<div class="card-columns d-flex justify-content-center">
+    <div class="card">
+        <div class="card-block">
+        {% if user.is_patient %}
+            <center>
+            <h2>Heart Rate Trend</h2>
+            </center>
+            {% include "pulse_tracer/charts/weekly_hr_summary_div.html" %}
+        {% elif user.is_health_care %}
+            <center>
+            <h2>Heart Rate Trend</h2>
+            </center>
+            {% include "pulse_tracer/charts/weekly_hr_summary_div.html" %}
+        {% endif %}
+        </div>
     </div>
+    <div class="card">
+        <div class="card-block">
+        {% if user.is_patient %}
+            <center>
+            <h2> Respiratory Rate Trend</h2>
+            </center>
+            {% include "pulse_tracer/charts/weekly_rr_summary_div.html" %}
+        {% elif user.is_health_care %}
+            <center>
+            <h2> Respiratory Rate Trend</h2>
+            </center>
+            {% include "pulse_tracer/charts/weekly_rr_summary_div.html" %}
+        {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+    {% include "pulse_tracer/charts/weekly_hr_summary_script.html" with hr_data=hr_data hr_labels=hr_labels %}
+    {% include "pulse_tracer/charts/weekly_rr_summary_script.html" with rr_data=rr_data hr_labels=hr_labels %}
 {% endblock %}
