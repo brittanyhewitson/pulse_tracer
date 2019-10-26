@@ -5,79 +5,214 @@
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         <link rel="stylesheet" type="text/css" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" crossorigin="anonymous">
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+        
         <!-- Font -->
-        <link href="https://fonts.googleapis.com/css?family=Roboto&display=swap" rel="stylesheet">
-        <link href="https://fonts.googleapis.com/css?family=Lato&display=swap" rel="stylesheet">
+        <!--<link href="https://fonts.googleapis.com/css?family=Lato:300,400|Source+Sans+Pro:300,400&display=swap" rel="stylesheet">-->
+        <link href="https://fonts.googleapis.com/css?family=Lato:100,300,400&display=swap" rel="stylesheet">
         <title>Pulse Tracer</title>
-        <link rel="stylesheet" href="{% static 'css/style.css' %}">
-        <link rel="icon" href="{% static 'bulb_square.png' %}">
+
+        <!-- Icons -->
+        <script src="https://kit.fontawesome.com/cce86833dd.js"></script>
+        
+        <link rel="icon" href="{% static 'image/bulb_square.png' %}">
+        <style>
+            /* The side navigation menu */
+            .sidenav {
+                height: 100%; /* 100% Full-height */
+                width: 0; /* 0 width - change this with JavaScript */
+                position: fixed; /* Stay in place */
+                z-index: 1; /* Stay on top */
+                top: 0; /* Stay at the top */
+                left: 0;
+                background-color: #111; /* Black*/
+                overflow-x: hidden; /* Disable horizontal scroll */
+                padding-top: 60px; /* Place content 60px from the top */
+                transition: 0.5s; /* 0.5 second transition effect to slide in the sidenav */
+            }
+            
+            /* The navigation menu links */
+            .sidenav a {
+                padding: 6px 6px 6px 32px;
+                text-decoration: none;
+                font-size: 25px;
+                /*color: #818181;*/
+                color: #F1F2F3;
+                display: block;
+                transition: 0.3s;
+                font-family: 'Lato', sans-serif;
+                font-weight: 300;
+            }
+
+            .sidenav h1 {
+                color: white;
+            }
+
+            /* When you mouse over the navigation links, change their color */
+            .sidenav a:hover {
+                color: #f1f1f1;
+                background-color: #818181;
+            }
+
+            /* Position and style the close button (top right corner) */
+            .sidenav .closebtn {
+                position: absolute;
+                top: 0;
+                right: 25px;
+                font-size: 36px;
+                margin-left: 100px;
+            }
+
+            .sidenav .logo_navbar {
+                padding: 10px 10px 10px 10px;*/
+                /*position: absolute;*/
+                /*top: 0;*/
+                float: left;
+                font-size: 30px;
+            }
+
+            .sidenav .logo_navbar:hover {
+                background-color: #111;
+            }
+
+            .sidenav .closebtn:hover {
+                background-color: #111;
+            }
+
+            .sidenav .dropdown-btn {
+                padding: 8px 8px 8px 32px;
+                text-decoration: none;
+                font-size: 25px;
+                color: #F1F2F3;
+                display: block;
+                border: none;
+                background: none;
+                width:100%;
+                text-align: left;
+                cursor: pointer;
+                outline: none;
+                font-family: 'Lato', sans-serif;
+                font-weight: 300;
+            }
+
+            .sidenav .dropdown-btn:active {
+                color: #f1f1f1;
+                background-color: #818181;
+            }
+
+            .sidenav .dropdown-btn:hover {
+                color: #f1f1f1;
+                background-color: #818181;
+            }
+            .dropdown-container {
+                display: none;
+                padding-left: 8px;
+            }
+
+            .dropdown-container a{
+                font-size: 18px;
+            }
+
+            .fa-caret-down {
+                float: right;
+                padding-right: 8px;
+            }
+
+            /* Style page content - use this if you want to push the page content to the right when you open the side navigation */
+            #main {
+                transition: margin-left .5s;
+                padding: 20px;
+            }
+
+            /* On smaller screens, where height is less than 450px, change the style of the sidenav (less padding and a smaller font size) */
+            @media screen and (max-height: 450px) {
+                .sidenav {padding-top: 15px;}
+                .sidenav a {font-size: 18px;}
+            }
+        </style>
+        <link href="{% static 'css/style.css' %}" rel="stylesheet" type="text/css"/>
     </head>
     <body>
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div id="mySidenav" class="sidenav">
+            <!-- Logo -->
             {% if user.is_authenticated %}
-                <a class="navbar-brand" href="{% url 'index' %}">
-                    <img src="{% static 'bulb.png'%}" width="37" height="52" alt="">
+                <a href="{% url 'index' %}" class="logo_navbar">
+                    <img src="{% static 'image/bulb.png' %}" width="45" height="63"alt=""> 
                     Pulse Tracer
                 </a>
-            {% else %}
-                <a class="navbar-brand" href="{% url 'login' %}">
-                    <img src="{% static 'bulb.png'%}" width="37" height="52" alt="">
-                    Pulse Tracer
-                </a>
-            {% endif %}
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav mr-auto">
-                <li class="nav-item active">
-                <a class="nav-link" href="{% url 'index' %}">Home <span class="sr-only">(current)</span></a>
-                </li>
+                <!-- Exit Icon -->
+                <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+
+                <!-- Dropdown menu for username -->
+                <button class="dropdown-btn">{{ user.username }} 
+                    <i class="fa fa-caret-down"></i>
+                </button>
+                <div class="dropdown-container">
+                    <a href="#"><i style="font-size: 15px;" class="fas fa-cog"></i> Settings</a>
+                    </i><a href="{% url 'logout' %}"><i style="font-size: 15px;" class="fas fa-sign-out-alt"></i> Sign Out</a>
+                </div>
+
+                <!-- Remainder of the navbar depending on if the user is a health care provider or patient-->
                 {% if user.is_health_care %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'health_care_provider' %}">Profile</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'patient_list' %}">Patients</a>
-                    </li>
+                    <a class="nav-link" href="{% url 'health_care_provider' %}">Profile</a>
+                    <a class="nav-link" href="{% url 'patient_list' %}">Patients</a>
                 {% elif user.is_patient %}
-                    <a class="nav-link" href="/pulse_tracer/patient">Profile</a>                
-                    <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="{% url 'data_summary' %}" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        Data Summary
-                    </a>
-                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                        <a class="dropdown-item" href="{% url 'data_summary' %}">Action</a>
-                        <a class="dropdown-item" href="{% url 'data_summary' %}">Another action</a>
-                        <div class="dropdown-divider"></div>
-                        <a class="dropdown-item" href="{% url 'data_summary' %}">Something else here</a>
-                    </div>
-                    </li>
+                    <a href="{% url 'patient' %}">Profile</a>                
+                    <a href="{% url 'data_summary' %}">Data Summary</a>
                 {% endif %}
-            </ul>
-            <form class="form-inline my-2 my-lg-0">
-                <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
-                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
-            </form>
-            </div>
-        </nav>
-        <!--TODO: Make this actually look nice-->
-        <div class="container" id="welcome">
-            {% if user.is_authenticated %}
-            <span>Welcome, <b>{{ user.username }}</b></span>
-            <span> / </span>
-            <a href="{% url 'logout' %}">Logout</a>
             {% else %}
-            <a href="{% url 'login' %}">Login</a>
-            {% endif %}
+                <a href="{% url 'login' %}" class="logo_navbar">
+                    <img src="{% static 'image/bulb.png' %}" width="25" height="35"alt=""> 
+                    Pulse Tracer
+                </a>
+                
+                <!-- Exit Icon -->
+                <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+            {% endif %}             
         </div>
-        {% block content %}
-        {% endblock %} 
+        <div id="main">
+            <span style="font-size:30px;cursor:pointer;font-family:'Lato', sans-serif;" onclick="openNav()">&#9776;</span>
+            {% block content %}
+            {% endblock %} 
+            <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+            <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>     
+        </div>
+        <script>
+            /* Set the width of the side navigation to 250px and the left margin of the page content to 250px */
+            function openNav() {
+                document.getElementById("mySidenav").style.width = "250px";
+                document.getElementById("main").style.marginLeft = "250px";
+            }
+    
+            /* Set the width of the side navigation to 0 and the left margin of the page content to 0 */
+            function closeNav() {
+                document.getElementById("mySidenav").style.width = "0";
+                document.getElementById("main").style.marginLeft = "0";
+            }
+        </script>
+        <script>
+            /* Loop through all dropdown buttons to toggle between hiding and showing its dropdown content - This allows the user to have multiple dropdowns without any conflict */
+            var dropdown = document.getElementsByClassName("dropdown-btn");
+            var i;
+            
+            for (i = 0; i < dropdown.length; i++) {
+                dropdown[i].addEventListener("click", function() {
+                this.classList.toggle("active");
+                var dropdownContent = this.nextElementSibling;
+                if (dropdownContent.style.display === "block") {
+                dropdownContent.style.display = "none";
+                } else {
+                dropdownContent.style.display = "block";
+                }
+                });
+            }
+        </script>
         <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>     
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>  
     </body>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.bundle.min.js"></script>
     {% block scripts %}
     {% endblock %}
+    
 </html>
