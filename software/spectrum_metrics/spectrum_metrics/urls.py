@@ -16,6 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include, re_path
 from django.contrib.auth import views as auth_views
+from pulse_tracer import views
 
 urlpatterns = [
     path('', auth_views.LoginView.as_view(), name='login'),
@@ -23,4 +24,5 @@ urlpatterns = [
     path('account/', include('account.urls')),
     path('pulse_tracer/', include('pulse_tracer.urls')),
     path('api/', include('api.urls')),
+    path('chart/', views.ChartData.as_view()),
 ]
