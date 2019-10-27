@@ -59,8 +59,7 @@
                 //data:{min_id:0, max_id:60}, 
                 // data source: class ChartData in views.py  
                 success: function(data){
-                    //const devices = data.device;
-                    //const hr =data[Object.keys(data)[0]]; //returns 'someVal'
+                    //Extract HR data
                     const hr =data.hr;
                     
                     // X-axis: 'timeStamp' value of HR data
@@ -68,7 +67,8 @@
 
                     // Y-axis: 'avg_result' value of HR data
                     defaultData=hr.map(v => v.avg_result);
-
+                    
+                    //Extract RR data
                     const rr =data.rr;
                     
                     // X-axis: 'timeStamp' value of RR data
