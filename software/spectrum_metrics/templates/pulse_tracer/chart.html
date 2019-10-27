@@ -1,0 +1,212 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Django + Charts.js</title>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+        <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+   
+</head>
+  
+    <body>
+
+    <div class='container'>
+        <div class='row'>
+            <div class='col-sm-12' url-endpoint='/chart/'>
+                <h1>Hello World <!--{{device}}--> </h1>
+                <div class='col-sm-6'>
+                    <canvas id="myChart" width="400" height="400"></canvas>
+                </div>
+                <div class='col-sm-6'>
+                    <canvas id="myChart2" width="400" height="400"></canvas>
+                </div>
+            </div>
+        </div>             
+
+    </div>
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js'></script>
+
+
+        <script>
+
+            $(document).ready(function(){      
+            var endpoint = '/chart/'
+            var defaultData = []
+            var labels = [];
+
+            $.ajax({
+                method: "GET",
+                url: endpoint,
+                //data:{min_id:0, max_id:60}, 
+                // data source: class ChartData in views.py  
+                success: function(data){
+                    //const devices = data.device;
+                    //const hr =data[Object.keys(data)[0]]; //returns 'someVal'
+                    const hr =data.hr;
+                    
+                    // X-axis: 'timeStamp' value of HR data
+                    labels = hr.map(v => v.timeStamp);
+
+                    // Y-axis: 'avg_result' value of HR data
+                    defaultData=hr.map(v => v.avg_result);
+
+                    const rr =data.rr;
+                    
+                    // X-axis: 'timeStamp' value of RR data
+                    labelsRR = rr.map(v => v.timeStamp);
+
+                    // Y-axis: 'avg_result' value of RR data
+                    defaultDataRR=rr.map(v => v.avg_result);
+
+                    //document.write(labels);
+
+                    //const hr =Object.keys(data)[0];
+                    //labels = devices.map(v => v.testDate);
+
+                    // X-axis: 'timeStamp' value of data
+                    //labels=data.map(v => v.timeStamp);
+                 
+                    //defaultData = devices.map(v => v.id);
+                    // Y-axis: 'avg_result' value of data
+                    //defaultData=data.map(v => v.avg_result);
+                    setChart();
+                    //setChartRR();
+                },  
+                error: function(error_data){
+                    console.log("error")
+                    console.log(error_data)
+                }
+            })
+
+
+            $.ajax({
+                method: "GET",
+                url: endpoint,
+                //data:{min_id:0, max_id:60}, 
+                // data source: class ChartData in views.py  
+                success: function(data){
+                    //const devices = data.device;
+                    //const hr =data[Object.keys(data)[0]]; //returns 'someVal'
+                    const hr =data.hr;
+                    
+                    // X-axis: 'timeStamp' value of HR data
+                    labels = hr.map(v => v.timeStamp);
+
+                    // Y-axis: 'avg_result' value of HR data
+                    defaultData=hr.map(v => v.avg_result);
+
+                    const rr =data.rr;
+                    
+                    // X-axis: 'timeStamp' value of RR data
+                    labelsRR = rr.map(v => v.timeStamp);
+
+                    // Y-axis: 'avg_result' value of RR data
+                    defaultDataRR=rr.map(v => v.avg_result);
+
+                    //document.write(labels);
+
+                    //const hr =Object.keys(data)[0];
+                    //labels = devices.map(v => v.testDate);
+
+                    // X-axis: 'timeStamp' value of data
+                    //labels=data.map(v => v.timeStamp);
+                 
+                    //defaultData = devices.map(v => v.id);
+                    // Y-axis: 'avg_result' value of data
+                    //defaultData=data.map(v => v.avg_result);
+                    setChartRR();
+                },  
+                error: function(error_data){
+                    console.log("error")
+                    console.log(error_data)
+                }
+            })
+            function setChart(){
+                var ctx2 = document.getElementById("myChart");
+                var myChart = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '# of HR',
+                        data: defaultData,
+                        borderWidth: 10
+                    }]
+                },
+                options: {
+                    scales: {
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero:true
+                            }
+                        }]
+                    }
+                }
+            });
+            }
+
+
+            function setChartRR(){
+                var ctx2 = document.getElementById("myChart");
+                var myChart2 = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: labelsRR,
+                    datasets: [{
+                        label: '# of RR',
+                        data: defaultDataRR,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.2)',
+                            'rgba(54, 162, 235, 0.2)',
+                            'rgba(255, 206, 86, 0.2)',
+                            'rgba(75, 192, 192, 0.2)',
+                            'rgba(153, 102, 255, 0.2)',
+                            'rgba(255, 159, 64, 0.2)'
+                        ],
+                        borderColor: [
+                            'rgba(255,99,132,1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 10
+                    }]
+                },
+                options: {
+                    scales: {
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero:true
+                            }
+                        }]
+                    }
+                }
+            });
+            }
+            // var ctx = document.getElementById("myChart");
+                })
+    </script>
+  </body>
+</html>
