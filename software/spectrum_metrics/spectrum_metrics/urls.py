@@ -24,5 +24,6 @@ urlpatterns = [
     path('account/', include('account.urls')),
     path('pulse_tracer/', include('pulse_tracer.urls')),
     path('api/', include('api.urls')),
-    path('chart/', views.ChartData.as_view()),
+    path('chartHR/', views.ChartDataHR.as_view()),
+    path('chartRR/', views.ChartDataRR.as_view()),
 ]
