@@ -75,7 +75,7 @@ class IndexView(LoginRequiredMixin, generic.ListView):
         
         return render(request, self.template_name, args)
 
-class ChartData(APIView):
+class ChartDataHR(APIView):
     authentication_classes = []
     permission_classes = []
     def get(self, request, format=None):
@@ -90,59 +90,96 @@ class ChartData(APIView):
             
             #Select only tuples in 7 days range
             lastItem = HeartRate.objects.filter(Q(analyzed_time=today,analyzed_time__gte=week_prior)|Q(analyzed_time__gt=week_prior)).order_by('analyzed_time')
-            lastItemRR = RespiratoryRate.objects.filter(Q(analyzed_time=today,analyzed_time__gte=week_prior)|Q(analyzed_time__gt=week_prior)).order_by('analyzed_time')
-            
+
             #Filter query by user id       
             lastItem=lastItem.filter(id=current_user_id)
-            lastItemRR=lastItemRR.filter(id=current_user_id)
-            
+
             #Keep only hr and corresponding collection time
             lastItem=lastItem.values('heart_rate','analyzed_time')
-            lastItemRR=lastItemRR.values('respiratory_rate','analyzed_time')
-    
+
             #Put Query Set into dataframe
             df = pd.DataFrame(lastItem)
-            dfRR = pd.DataFrame(lastItemRR)
-    
+
             #Round hour to floor. E.g: 22:35:00 -> 22:00:00
             df['timeStamp'] = df['analyzed_time'].dt.floor('h')
-            dfRR['timeStamp'] = dfRR['analyzed_time'].dt.floor('h')
-      
+
             #Remove analyzed_time column which haven't hour rounded 
             del df['analyzed_time']
-            del dfRR['analyzed_time']
-    
+
             #Convert heart_rate to numeric type for computation purpose
             df['heart_rate']= df['heart_rate'].apply(pd.to_numeric)
-            dfRR['respiratory_rate']= dfRR['respiratory_rate'].apply(pd.to_numeric)
-    
+
             #Calculate heart rate for each hour of days
             df['avg_result'] = df.groupby(['timeStamp'])['heart_rate'].transform('mean')
-            dfRR['avg_result'] = dfRR.groupby(['timeStamp'])['respiratory_rate'].transform('mean')
-            
+
             #Drop original heart_rate column
             del df['heart_rate']
-            del dfRR['respiratory_rate']
 
             df=df.drop_duplicates()
-            dfRR=dfRR.drop_duplicates()
-    
+
             #Convert timeStamp to string, so we can convert dataframes to dict after
             df['timeStamp']=df['timeStamp'].dt.strftime('%Y-%m-%d %H:%M:%S').tolist()
-            dfRR['timeStamp']=dfRR['timeStamp'].dt.strftime('%Y-%m-%d %H:%M:%S').tolist()
-    
-            #Convert dataframe to dict with 'record' type (each row becomes a dictionary where key is column name and value is the data in the cell)
-            data2=df.to_dict('records')
-            data2RR=dfRR.to_dict('records')
 
-            args= {'hr':data2, 'rr':data2RR}
-            
+            #Convert dataframe to dict with 'record' type (each row becomes a dictionary where key is column name and value is the data in the cell)
+            data2HR=df.to_dict('records')
+
         #Exception if there is no corresponding user_id in db
         except:
             raise Http404("No MyModel matches the given query.")
 
         #Return the dict data to the chart
-        return Response(args)
+        return Response(data2HR)
+        
+class ChartDataRR(APIView):
+    authentication_classes = []
+    permission_classes = []
+    def get(self, request, format=None):
+        try:
+            obj= RespiratoryRate.objects.get(id=current_user_id)
+
+            #Get 1 week from today
+            today = date.today()
+            week_prior =  today - timedelta(weeks=1)
+            
+            #Select only tuples in 7 days range
+            lastItemRR = RespiratoryRate.objects.filter(Q(analyzed_time=today,analyzed_time__gte=week_prior)|Q(analyzed_time__gt=week_prior)).order_by('analyzed_time')
+
+            #Filter query by user id       
+            lastItemRR=lastItemRR.filter(id=current_user_id)
+
+            #Keep only rr and corresponding collection time
+            lastItemRR=lastItemRR.values('respiratory_rate','analyzed_time')
+
+            #Put Query Set into dataframe
+            dfRR = pd.DataFrame(lastItemRR)
+            
+            #Round hour to floor. E.g: 22:35:00 -> 22:00:00
+            dfRR['timeStamp'] = dfRR['analyzed_time'].dt.floor('h')
+
+            #Remove analyzed_time column which haven't hour rounded 
+            del dfRR['analyzed_time']
+
+            #Convert RespiratoryRate to numeric type for computation purpose
+            dfRR['respiratory_rate']= dfRR['respiratory_rate'].apply(pd.to_numeric)
+
+            #Calculate Respiratory Rate  for each hour of days
+            dfRR['avg_result'] = dfRR.groupby(['timeStamp'])['respiratory_rate'].transform('mean')
+            
+            #Drop original RespiratoryRate column
+            del dfRR['respiratory_rate']
+
+            dfRR=dfRR.drop_duplicates()
+
+            #Convert timeStamp to string, so we can convert dataframes to dict after
+            dfRR['timeStamp']=dfRR['timeStamp'].dt.strftime('%Y-%m-%d %H:%M:%S').tolist()
+
+            #Convert dataframe to dict with 'record' type (each row becomes a dictionary where key is column name and value is the data in the cell)
+            data2RR=dfRR.to_dict('records')
+            
+        except:
+            raise Http404("No MyModel matches the given query.")
+
+        return Response(data2RR)
 
 class DataSummaryView(LoginRequiredMixin, generic.TemplateView):
     template_name = 'pulse_tracer/data_summary.html'
