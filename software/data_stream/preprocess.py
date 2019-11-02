@@ -6,6 +6,7 @@ import timeit
 import logging
 import datetime
 import subprocess
+import pyodbc
 
 import numpy as np
 
@@ -26,6 +27,20 @@ logging.basicConfig(
     level=logging.INFO
 )
 
+def serverConfiguration():
+    #server = 'capstonesfu.database.windows.net'
+    dsn = 'rpitestsqlserverdatasource'
+    user = 'team2@capstonesfu'
+    database = 'spectrum_metrics'
+    username = 'team2'
+    password = '@ensc405'
+    try:
+        connString = 'DSN={0};UID={1};PWD={2};DATABASE={3};'.format(dsn,user,password,database)
+        cnxn = pyodbc.connect(connString)
+        return cnxn
+    except:
+        print("Connection Error, Please Double Check")
+        
 
 def get_roi_data(process_video, **kwargs):
     """
@@ -36,6 +51,7 @@ def get_roi_data(process_video, **kwargs):
     #process_video.batch_id = current_datetime.strftime("%Y%m%d%H%M%S")
     batch_id = 0
     transfer = False
+    cloudStorage=True # set True for storing on Azure
 
     try:
         if kwargs["remote_user"] and kwargs["remote_output_dir"] and kwargs["remote_ip"]:
@@ -45,6 +61,14 @@ def get_roi_data(process_video, **kwargs):
             transfer = True
     except KeyError:
         pass
+
+    # Create a temporary container before transferring a group of 900 frames
+    tempData=[]
+
+     #Create connection to the SQL Server
+    if cloudStorage==True:
+        cnxn=serverConfiguration()
+        cursor=cnxn.cursor()
 
     # Time the algorithm
     start = timeit.default_timer()
@@ -72,9 +96,13 @@ def get_roi_data(process_video, **kwargs):
         # Show the image
         cv2.imshow('frame', process_video.frame)
 
+        # Append each processed frame to tempData container
+        tempData.append(process_video.rois[num_frames])
+
         # Save the data
         # TODO: Add counter here to count number of frames. Once it reaches
         # 900 (30 seconds of video) increment the counter 
+        '''
         num_frames += 1
         if num_frames == 10:
             num_frames = 0
@@ -85,6 +113,30 @@ def get_roi_data(process_video, **kwargs):
                 subprocess.check_call(cmd, shell=True)
             process_video.rois = []
             batch_id += 1
+        '''
+        if num_frames%900==0 and num_frames !=0:
+            if cloudStorage==False: #Store JSON data on local machine
+                    num_frames = 0
+                    dest_filepath, dest_filename = process_video.save_data(kwargs["database"], batch_id)
+                    if transfer:
+                        remote_dest_file = os.path.join(remote_output_dir, dest_filename)
+                        cmd = f"rsync -avPL {dest_filepath} {user}@{ip}:{remote_dest_file}"
+                        subprocess.check_call(cmd, shell=True)
+                    process_video.rois = []
+                    batch_id += 1
+            else: # Store JSON data on Azure
+                    for i in range(900):
+                            red_data=str(tempData[i]["red_data"])
+                            green_data=str(tempData[i]["green_data"])
+                            blue_data=str(tempData[i]["blue_data"])
+                            collection_time=tempData[i]["collection_time"]
+                            batch_id=tempData[i]["batch_id"]
+                            location_id=tempData[i]["location_id"]
+                            cursor.execute("INSERT INTO dbo.testing(location_id,collection_time,batch_id,blue_data,green_data,red_data) VALUES (?,?,?,?,?,?)", (location_id,collection_time,batch_id,blue_data,green_data,red_data))
+                    cnxn.commit()
+                    tempData=[]
+
+        num_frames += 1
 
         # Break if the "q" key is selected
         if cv2.waitKey(1) & 0xFF == ord("q"):
