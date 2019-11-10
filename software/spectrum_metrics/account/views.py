@@ -44,8 +44,12 @@ class SignUpView(generic.TemplateView):
             user = authenticate(username=username, password=raw_password)
             login(request, user)
             if signup_form.cleaned_data.get('user_type') == "HC":
+                user.is_health_care = True
+                user.save()
                 return HttpResponseRedirect(reverse('create_health_care', args=(user.id, )))
             elif signup_form.cleaned_data.get('user_type') == "P":
+                user.is_patient = True
+                user.save()
                 return HttpResponseRedirect(reverse('create_device', kwargs={'pk': user.id}))
 
 
@@ -85,11 +89,9 @@ class CreatePatientView(generic.TemplateView):
 
     def post(self, request, **kwargs):
         patient_form = CreatePatientForm(request.POST)
-        
+
         if patient_form.is_valid():
             user = get_object_or_404(User, pk=kwargs["pk"])
-            user.is_patient = True
-            user.save()
             device = get_object_or_404(Device, pk=kwargs["device_id"])
             patient = patient_form.save(commit=False)
             patient.user = user
@@ -121,7 +123,7 @@ class CreateHealthCareView(generic.TemplateView):
         
         if health_care_form.is_valid():
             user = get_object_or_404(User, **kwargs)
-            user.is_health_care = True
+            # user.is_health_care = True
             user.save()
             health_care = health_care_form.save(commit=False)
             health_care.user = user

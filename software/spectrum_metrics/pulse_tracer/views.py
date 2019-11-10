@@ -6,7 +6,9 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse
+from datetime import date
 
+import html
 
 from .models import(
     HealthCare,
@@ -24,23 +26,32 @@ from .utils import query_scripts
 
 
 class IndexView(LoginRequiredMixin, generic.ListView):
-    template_name = 'pulse_tracer/index.html'
+    template_name = 'pulse_tracer/patient_index.html'
 
     def get(self, request, **kwargs):
         current_user_id = request.user.id
         user = get_object_or_404(User, id=current_user_id)
-
+        print(current_user_id)
         if user.is_patient:
+            self.template_name = 'pulse_tracer/patient_index.html'
             patient = get_object_or_404(Patient, user__id=current_user_id)
-            labels, data = query_scripts.get_weekly_summary(patient)
+            # TODO: Change template for patient
+            hr_labels, hr_data, rr_data = query_scripts.get_weekly_summary(user)
+            context = {
+                "hr_labels": hr_labels,
+                "hr_data": hr_data,
+                "rr_data": rr_data,
+            }
         elif user.is_health_care:
             # CHANGE THIS
+            # TODO: Change template for health care provider
+            self.template_name = 'pulse_tracer/health_care_provider_index.html'
             hr_labels, hr_data, rr_data = query_scripts.get_weekly_summary(user)
-        context = {
-            "hr_labels": hr_labels,
-            "hr_data": hr_data,
-            "rr_data": rr_data,
-        }
+            patients = Patient.objects.filter(health_care_provider__user__id=request.user.id)
+            context = {
+                "patients": patients,
+            }
+        
         return render(request, self.template_name, context)
 
 
@@ -48,7 +59,15 @@ class DataSummaryView(LoginRequiredMixin, generic.TemplateView):
     template_name = 'pulse_tracer/data_summary.html'
 
     def get(self, request, **kwargs):
-        context = {}
+        current_user_id = request.user.id
+        user = get_object_or_404(User, id=current_user_id)
+        #patient = get_object_or_404(Patient, **kwargs)
+        hr_labels, hr_data, rr_data = query_scripts.get_weekly_summary(user)
+        context = {
+            "hr_labels": hr_labels,
+            "hr_data": hr_data,
+            "rr_data": rr_data,
+        }
         return render(request, self.template_name, context)
 
 
@@ -155,8 +174,13 @@ class PatientDetailView(LoginRequiredMixin, generic.DetailView):
 
     def get(self, request, **kwargs):
         patient = Patient.objects.get(user__id=request.user.id)
+        age = int((date.today() - patient.birth_date).days / 365.2425)
+        bmi = patient.weight / ((patient.height/100) ** 2)
+        bmi = float("{0:.2f}".format(bmi))
         context = {
-            'patient': patient
+            'patient': patient,
+            'age': age,
+            'bmi': bmi,
         }
         return render(request, self.template_name, context)
     

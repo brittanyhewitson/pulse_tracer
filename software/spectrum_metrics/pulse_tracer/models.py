@@ -94,15 +94,25 @@ class User(AbstractUser):
 
 
 class Patient(models.Model):
+    GENDER_CHOICES = [
+        ("M", "Male"),
+        ("F", "Female"),
+    ]
+
     # Patient ID (PK)
     user = models.OneToOneField(
         User, 
         on_delete=models.CASCADE,
-        #primary_key=True
     )
     
     # Date of Birth
     birth_date = models.DateField(
+    )
+
+    # Gender
+    gender = models.CharField(
+        max_length=100,
+        choices=GENDER_CHOICES,
     )
 
     # TODO: some sort of convention for lbs or kgs
@@ -123,6 +133,8 @@ class Patient(models.Model):
     health_conditions = models.TextField(
     )
 
+    # Current Medications
+
     # Device ID (FK)
     device = models.OneToOneField(
         "Device",
@@ -133,6 +145,7 @@ class Patient(models.Model):
     health_care_provider = models.ManyToManyField(
         'HealthCare'
     )
+    
 
     # When the object PK is displayed
     def __str__(self):
@@ -162,7 +175,7 @@ class HealthCare(models.Model):
 
     # When the object PK is displayed
     def __str__(self):
-        return "_".join(["HC", format(self.id, "04")])
+        return " ".join([self.user.first_name, self.user.last_name])
 
 
 class HeartRate(models.Model):
