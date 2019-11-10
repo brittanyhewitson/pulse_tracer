@@ -1,14 +1,16 @@
 {% extends 'pulse_tracer/base_view.html' %}
-
 {% block content %}
-    <div class="container">
-        <h2>Patients</h2>
+<div class="jumbotron">
+    <h1 class="display-4">Welcome back, {{ user.first_name }}!</h1>
+    <p class="lead">Here's a quick summary of your patient's recently calculated heart and respiratory rate data</p>
         <table class="table table-striped" align="center" width=75%>
             <thead>
                 <tr>
                     <th>Patient ID</th>
                     <th>First Name</th>
                     <th>Last Name</th>
+                    <th>Weekly HR</th>
+                    <th>Weekyl RR</th>
                 </tr>
             </thead>
             {% for patient in patients %}
@@ -18,8 +20,14 @@
                     <td><a href="{% url 'data_summary' %}">{{ patient }}</a></td>
                     <td>{{ patient.user.first_name }}</td>
                     <td>{{ patient.user.last_name }}</td>
+                    <td>55</td>
+                    <td>15</td>
                 </tr>
             {% endfor %}
         </table>
-    </div>
+    <center>
+    <a class="btn btn-success btn-lg" href="{% url 'patient_list' %}" role="button">View more</a>
+    </center>
+</div>
+
 {% endblock %}

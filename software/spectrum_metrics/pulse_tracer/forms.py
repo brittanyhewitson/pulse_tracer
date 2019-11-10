@@ -27,8 +27,7 @@ class UserUpdateForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = [
-            #'username', 
+        fields = [ 
             'first_name', 
             'last_name', 
             'email', 
@@ -44,8 +43,6 @@ class HealthCareUpdateForm(forms.ModelForm):
 
 
 class PatientUpdateForm(forms.ModelForm):
-    birth_date = forms.DateField(
-    )
     weight = forms.DecimalField(
         max_digits=6,
         decimal_places=2,
@@ -56,18 +53,7 @@ class PatientUpdateForm(forms.ModelForm):
         decimal_places=2,
         help_text='Height in cm.'
     )
-    health_conditions = forms.CharField(
-        max_length=255, 
-        required=False, 
-        help_text='Optional.'
-    )
-    health_care_provider = forms.CharField(
-        max_length=255, 
-        required=False, 
-        help_text='Name of health care provider.'
-    )
     
-
     class Meta:
         model = Patient
         fields = [
@@ -79,5 +65,5 @@ class PatientUpdateForm(forms.ModelForm):
         ]
         
         widgets = {
-            'birth_date': DatePickerInput(format='%d/%m/%Y')
+            'birth_date': DatePickerInput(format='%m/%d/%Y')
         }

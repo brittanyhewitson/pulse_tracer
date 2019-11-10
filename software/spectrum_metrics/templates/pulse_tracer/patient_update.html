@@ -4,7 +4,10 @@
         <h2>Edit Your Personal Information</h2>
         <form method="post">
             {% csrf_token %}
-
+            {% load bootstrap4 %}
+			<!--{% bootstrap_css %}-->
+			{% bootstrap_javascript jquery='full' %}
+			{{ patient_form.media }}
             {% for field in user_form %}
                 <p>
                 {{ field.label_tag }}<br>
@@ -20,18 +23,22 @@
 
             {% for field in patient_form %}
                 <p>
-                {{ field.label_tag }}<br>
-                {{ field }}
-                {% if field.help_text %}
-                    <small style="color: grey">{{ field.help_text }}</small>
-                {% endif %}
-                {% for error in field.errors %}
-                    <p style="color: red">{{ error }}</p>
-                {% endfor %}
+                    <!--    
+                        TODO: Add a search option for health care providers and improve
+                        the UI for adding/deleting a health care provider from the list 
+                    -->
+                    {{ field.label_tag }}<br>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <small style="color: grey">{{ field.help_text }}</small>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <p style="color: red">{{ error }}</p>
+                    {% endfor %}
                 </p>
             {% endfor %}
-            
-            <button type="submit" class="btn btn-info">Save</button>
+            <a href="{% url 'patient' %}" class="btn btn-danger">Cancel</a>
+            <button type="submit" class="btn btn-success">Save</button>
         </form>
     </div>
 {% endblock %}

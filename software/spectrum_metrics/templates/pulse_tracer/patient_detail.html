@@ -1,37 +1,130 @@
 {% extends 'pulse_tracer/base_view.html' %}
+{% load static %}
 {% block content %}
-    <div class="container">
-        <h2>Patient Profile</h2>
+<div class="row">
+    <div class="col-4">
         <div class="card">
+            <img class="card-img-top" src="{% static 'image/avatar.png' %}" alt="Card image">
             <div class="card-body">
-                <p class="card-text">First name: {{ patient.user.first_name }}</p>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <h2>{{ patient.user.first_name }} {{ patient.user.last_name }}</h2>
+                    </div>
+                    {% if user.is_patient %}
+                        <div class="col">
+                            </i><a href="{% url 'patient_update' %}"><i style="font-size: 15px;" class="fas fa-user-edit"></i>Edit Profile</a>
+                        </div>
+                    {% endif %}
+                </div>
+                <hr>
+                <p>{{ age }} years old</p>
+                <p>Member since {{ patient.user.date_joined|date:"M d, Y" }}</p>
             </div>
         </div>
-        <div class="card">
-            <div class="card-body">
-                <p class="card-text">Last name: {{ patient.user.last_name }}</p>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-body">
-                <p class="card-text">Birthdate: {{ patient.birth_date }}</p>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-body">
-                <p class="card-text">Height: {{ patient.height }}</p>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-body">
-                <p class="card-text">Health Conditions: {{ patient.health_conditions }}</p>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-body">
-                <p class="card-text">Health Care Provider: {{ patient.health_care_provider }}</p>
-            </div>
-        </div>
-        <a class="btn" href="{% url 'patient_update' %}"><i class="icon-edit"></i> Edit Profile</a>
     </div>
+    <div class="col">
+        <div class="row">
+            <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            <h2>Personal Info</h2>
+                            <hr>
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <p class="card-text">First name</p>
+                                </div>
+                                <div class="col">
+                                    <p class="card-text"> {{ patient.user.first_name }}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <p class="card-text">Last name</p>
+                                </div>
+                                <div class="col">
+                                    <p class="card-text">{{ patient.user.last_name}}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <p class="card-text">Birthdate</p>
+                                </div>
+                                <div class="col">
+                                    <p class="card-text">{{ patient.birth_date }}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <p class="card-text">Height</p>
+                                </div>
+                                <div class="col">
+                                    <p class="card-text">{{ patient.height }}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <p class="card-text">Weight</p>
+                                </div>
+                                <div class="col">
+                                    <p class="card-text">{{ patient.weight }}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                    <div class="col-sm-3">
+                                        <p class="card-text">Body Mass Index (BMI)</p>
+                                    </div>
+                                    <div class="col">
+                                        <p class="card-text">{{ bmi }}</p>
+                                    </div>
+                                </div>
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <p class="card-text">Health Conditions</p>
+                                </div>
+                                <div class="col">
+                                    <p class="card-text">{{ patient.health_conditions }}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <p class="card-text">Health Care Providers</p>
+                                </div>
+                                <div class="col">
+                                    {% for health_care in patient.health_care_provider.all %}
+                                        <p class="card-text">{{ health_care.user.first_name }} {{ health_care.user.last_name }}</p>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class="card-body">
+                        <h2>User Info</h2>
+                        <hr>
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <p class="card-text">Username</p>
+                            </div>
+                            <div class="col">
+                                <p class="card-text">{{ patient.user.username }}</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <p class="card-text">E-mail</p>
+                            </div>
+                            <div class="col">
+                                <p class="card-text">{{ patient.user.email }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

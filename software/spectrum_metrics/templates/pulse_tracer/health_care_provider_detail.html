@@ -1,14 +1,87 @@
 {% extends 'pulse_tracer/base_view.html' %}
+{% load static %}
 {% block content %}
-    <div class="container">
-        <h2>Personal Information</h2>
-        <a class="btn" href="{% url 'health_care_provider_update' %}"><i class="icon-edit"></i> Edit Profile</a>
+<div class="row">
+    <div class="col-4">
         <div class="card">
+            <img class="card-img-top" src="{% static 'image/avatar.png' %}" alt="Card image">
             <div class="card-body">
-                <p class="card-text">First name: {{ health_care_provider.user.first_name }}</p>
-                <p class="card-text">Last name: {{ health_care_provider.user.last_name }}</p>
-                <p class="card-text">Role: {{ health_care_provider.get_role_display }}</p>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <h2>{{ health_care_provider.user.first_name }} {{ health_care_provider.user.last_name }}</h2>
+                    </div>
+                    {% if user.is_health_care %}
+                        <div class="col">
+                            </i><a href="{% url 'health_care_provider_update' %}"><i style="font-size: 15px;" class="fas fa-user-edit"></i>Edit Profile</a>
+                        </div>
+                    {% endif %}
+                </div>
+                <hr>
+                <p>Member since {{ user.date_joined|date:"M d, Y" }}</p>
             </div>
         </div>
     </div>
+    <div class="col">
+        <div class="row">
+            <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            <h2>Personal Info</h2>
+                            <hr>
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <p class="card-text">First name</p>
+                                </div>
+                                <div class="col">
+                                    <p class="card-text"> {{ health_care_provider.user.first_name }}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <p class="card-text">Last name</p>
+                                </div>
+                                <div class="col">
+                                    <p class="card-text">{{ health_care_provider.user.last_name}}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <p class="card-text">Health Care Provider Role</p>
+                                </div>
+                                <div class="col">
+                                    <p class="card-text">{{ health_care_provider.get_role_display }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class="card-body">
+                        <h2>User Info</h2>
+                        <hr>
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <p class="card-text">Username</p>
+                            </div>
+                            <div class="col">
+                                <p class="card-text">{{ user.username }}</p>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-3">
+                                <p class="card-text">E-mail</p>
+                            </div>
+                            <div class="col">
+                                <p class="card-text">{{ user.email }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
