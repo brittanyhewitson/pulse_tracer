@@ -1,16 +1,13 @@
 import os
-from picamera.array import PiRGBArray
-from picamera import PiCamera
-import time
-import cv2
 import json
-
 import numpy as np
 
 from datetime import datetime
+from picamera import PiCamera
+from picamera.array import PiRGBArray
+from time import sleep
 
 from templates import TIMEZONE
-
 from data_stream.process_images import Process
 
 
@@ -64,10 +61,29 @@ class ProcessStream(Process):
     def get_frame(self):
         return self.cameras[self.selected_cam].get_frame()
 
-    def save_data(self, database, batch_id):
+    def collect_video(self, output_filename, video_length):
+        self.camera.cam.start_preview()
+        self.camera.cam.start_recording(output_filename)
+        sleep(video_length)
+        self.camera.cam.stop_recording()
+        self.camera.cam.stop_preview()
+
+    def save_data(self, database, batch_id, cursor=None, cnxn=None):
         batch_id_str = "".join(["B", format(batch_id, "05")])
         if database:
-            print("database")
+            # TODO: Add database stuff here
+            if database:
+                # Insert data into the database
+                for i in range(len(self.rois)):
+                    red_data=str(self.rois[i]["red_data"])
+                    green_data=str(self.rois[i]["green_data"])
+                    blue_data=str(self.rois[i]["blue_data"])
+                    collection_time=self.rois[i]["collection_time"]
+                    batch_id=self.rois[i]["batch_id"]
+                    location_id=self.rois[i]["location_id"]
+                    # TODO: Add the device ID here so we can link the ROI data to the patient
+                    cursor.execute("INSERT INTO dbo.testing(location_id,collection_time,batch_id,blue_data,green_data,red_data) VALUES (?,?,?,?,?,?)", (location_id,collection_time,batch_id,blue_data,green_data,red_data))
+                cnxn.commit()
         else:
             # Check if the base directory exists
             if not os.path.exists(self.data_dir):
