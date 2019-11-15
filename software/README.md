@@ -1,4 +1,3 @@
-
 # Pulse Tracer
 
 Pulse Tracer is a patient monitoring system created by LumoAnalytics. It uses photoplethysmography (PPG) to remotely measure the heart and respiratory rates of primarily immobile elderly patients who are often left unattended. The goal of the device is to provide a way to accurately measure the heart and respiratory rates of patients and to detect significant variations from the average values in an attempt to alert caregivers of possible emerging health conditions.
@@ -76,8 +75,9 @@ This script will save the video as an `.h264` file, however the preprocessing pi
 ### Running the Pipeline on the Raspberry Pi
 #### Video Analysis
 To run the preprocessing analysis on an existing video file, you will need to run the `preprocess.py` script with the `video-file` command, which has the following inputs:
+
 | Input | Type | Description | Required |
-| :---: | ---- | ----------- | :------: |
+| ----- | ---- | ----------- | :------: |
 | `filename` | string | The name of the input video file | :heavy_check_mark: |
 | `roi_locations` | list of strings | A list of the ROIs to use in the preprocessing algorithm. The options for these regions can be found [here](https://csil-git1.cs.surrey.sfu.ca/capstone-1194-group-2/capstone/blob/master/software/templates.py#L13) | :heavy_check_mark: |
 | `--matrix_decomposition` | flag | A flag specifying whether to use the matrix decomposition algorithm for downstream analysis or to use FDBSS | :x: |
@@ -90,8 +90,9 @@ python3 preprocess.py video-file /path/to/video_1.h264  left_cheek right_cheek -
 
 #### Stream Analysis
   To run the preprocessing analysis on a live stream, you will need to run the `preprocess.py` script with the `video-stream` command, which has the following inputs:
+  
 | Input | Type | Description | Required |
-| :---: | ---- | ----------- | :------: |
+| ----- | ---- | ----------- | :------: |
 | `roi_locations` | list of strings | A list of the ROIs to use in the preprocessing algorithm. The options for these regions can be found [here](https://csil-git1.cs.surrey.sfu.ca/capstone-1194-group-2/capstone/blob/master/software/templates.py#L13) | :heavy_check_mark: |
 | `--data_dir` | string | A filepath to the directory where the JSON data will be stored. The default value is the directory where the code is | :x: |
 | `--matrix_decomposition` | flag | A flag specifying whether to use the matrix decomposition algorithm for downstream analysis or to use FDBSS | :x: |
@@ -107,8 +108,9 @@ python3 preprocess.py video-stream  left_cheek right_cheek --matrix_decompositio
 ### Running the Pipeline on a Local Machine
 #### Video Analysis on Existing Video File
 To run the preprocessing analysis on an existing video file, you will need to run the `local_pipeline.py` script with the `local-video` command, which has the following inputs:
+
 | Input | Type | Description | Required |
-| :---: | ---- | ----------- | :------: |
+| ----- | ---- | ----------- | :------: |
 | `roi_locations` | list of strings | A list of the ROIs to use in the preprocessing algorithm. The options for these regions can be found [here](https://csil-git1.cs.surrey.sfu.ca/capstone-1194-group-2/capstone/blob/master/software/templates.py#L13) | :heavy_check_mark: |
 | `--input_file` | string | The filepath to the existing video file on the local machine | :heavy_check_mark: |
 | `--preprocess_analysis` | string | Specifies whether to use matrix decomposition or FDBSS for the preprocessing algorithm. Choices for this field can be found [here](https://csil-git1.cs.surrey.sfu.ca/capstone-1194-group-2/capstone/blob/master/software/templates.py#L32). The default value is FDBSS | :x: | 
@@ -120,8 +122,9 @@ python3 local_pipeline.py local-video left_cheek right_cheek --input_file /path/
 ```
 #### Remote Data Collection and Video Analysis
 To remotely launch data collection run the preprocessing analysis on the resulting video file, you will need to run the `local_pipeline.py` script with the `remote-video` command, which has the following inputs:
+
 | Input | Type | Description | Required |
-| :---: | ---- | ----------- | :------: |
+| ----- | ---- | ----------- | :------: |
 | `roi_locations` | list of strings | A list of the ROIs to use in the preprocessing algorithm. The options for these regions can be found [here](https://csil-git1.cs.surrey.sfu.ca/capstone-1194-group-2/capstone/blob/master/software/templates.py#L13) | :heavy_check_mark: |
 | `--output_filename` | string | The filename to give the resulting JSON file | :x: |
 | `--destination_filepath` | string | The filepath to the directory where the JSON file will be stored on the local machine | :x: |
@@ -135,8 +138,9 @@ python3 local_pipeline.py remote-video left_cheek right_cheek --output_filename 
 ```
 #### Stream Analysis
 To remotely launch data collection run the preprocessing analysis on the resulting video file, you will need to run the `local_pipeline.py` script with the `remote-stream` command, which has the following inputs:
-| Input | Type | Description | Required |
-| :---: | ---- | ----------- | :------: |
+
+ Input | Type | Description | Required |
+| ----- | ---- | ----------- | :------: |
 | `destination_filepath` | string | The full filepath to where the video file will be stored | :heavy_check_mark: |
 | `roi_locations` | list of strings | A list of the ROIs to use in the preprocessing algorithm. The options for these regions can be found [here](https://csil-git1.cs.surrey.sfu.ca/capstone-1194-group-2/capstone/blob/master/software/templates.py#L13) | :heavy_check_mark: |
 | `--preprocess_analysis` | string | Specifies whether to use matrix decomposition or FDBSS for the preprocessing algorithm. Choices for this field can be found [here](https://csil-git1.cs.surrey.sfu.ca/capstone-1194-group-2/capstone/blob/master/software/templates.py#L32). The default value is FDBSS | :x: | 
