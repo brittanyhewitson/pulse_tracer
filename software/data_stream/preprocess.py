@@ -27,19 +27,21 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-def serverConfiguration():
-    #server = 'capstonesfu.database.windows.net'
+def server_configuration():
+    """
+    Configure the server so data can be sent to the Azure cloud database
+    """
     dsn = 'rpitestsqlserverdatasource'
-    user = 'team2@capstonesfu'
-    database = 'spectrum_metrics'
-    username = 'team2'
-    password = '@ensc405'
+    user = os.environ.get('AZURE_DB_USER')
+    database = os.environ.get('AZURE_DB', 'spectrum_metrics')
+    username = os.environ.get('AZURE_DB_USERNAME')
+    password = os.environ.get('AZURE_DB_PASSWORD')
     try:
         connString = 'DSN={0};UID={1};PWD={2};DATABASE={3};'.format(dsn,user,password,database)
         cnxn = pyodbc.connect(connString)
         return cnxn
     except:
-        print("Connection Error, Please Double Check")
+        logging.error("Connection Error, Please Double Check")
         
 
 def get_roi_data(process_video, **kwargs):
@@ -51,24 +53,21 @@ def get_roi_data(process_video, **kwargs):
     #process_video.batch_id = current_datetime.strftime("%Y%m%d%H%M%S")
     batch_id = 0
     transfer = False
-    cloudStorage=True # set True for storing on Azure
+    cnxn = None
+    cursor = None
 
     try:
-        if kwargs["remote_user"] and kwargs["remote_output_dir"] and kwargs["remote_ip"]:
-            user = kwargs["remote_user"]
+        if kwargs["remote_host"] and kwargs["remote_output_dir"]:
+            remote_host = kwargs["remote_host"]
             remote_output_dir = kwargs["remote_output_dir"]
-            ip = kwargs["remote_ip"]
             transfer = True
     except KeyError:
         pass
 
-    # Create a temporary container before transferring a group of 900 frames
-    tempData=[]
-
-     #Create connection to the SQL Server
-    if cloudStorage==True:
-        cnxn=serverConfiguration()
-        cursor=cnxn.cursor()
+    #Create connection to the SQL Server
+    if kwargs["database"] == True:
+        cnxn = server_configuration()
+        cursor = cnxn.cursor()
 
     # Time the algorithm
     start = timeit.default_timer()
@@ -76,7 +75,7 @@ def get_roi_data(process_video, **kwargs):
     while(True):
         frame = process_video.get_frame()
         if frame is None:
-            break
+            continue
 
         # Add frame info to the class
         process_video.frame = frame
@@ -88,7 +87,7 @@ def get_roi_data(process_video, **kwargs):
         if not faces:
             continue
 
-        # Need to add function for comparing multiple detected faces here
+        # TODO: Need to add function for comparing multiple detected faces here
 
         # Get the landmarks
         process_video.get_landmarks(faces, kwargs["roi_locations"], batch_id)
@@ -96,46 +95,24 @@ def get_roi_data(process_video, **kwargs):
         # Show the image
         cv2.imshow('frame', process_video.frame)
 
-        # Append each processed frame to tempData container
-        tempData.append(process_video.rois[num_frames])
-
         # Save the data
         # TODO: Add counter here to count number of frames. Once it reaches
         # 900 (30 seconds of video) increment the counter 
-        '''
-        num_frames += 1
-        if num_frames == 10:
-            num_frames = 0
-            dest_filepath, dest_filename = process_video.save_data(kwargs["database"], batch_id)
+        if num_frames == 900:
+            # Store JSON data on local machine
+            dest_filepath, dest_filename = process_video.save_data(
+                                                kwargs["database"],
+                                                batch_id,
+                                                cursor,
+                                                cnxn,
+                                            )
             if transfer:
                 remote_dest_file = os.path.join(remote_output_dir, dest_filename)
-                cmd = f"rsync -avPL {dest_filepath} {user}@{ip}:{remote_dest_file}"
+                cmd = f"rsync -avPL {dest_filepath} {remote_host}:{remote_dest_file}"
                 subprocess.check_call(cmd, shell=True)
             process_video.rois = []
             batch_id += 1
-        '''
-        if num_frames%900==0 and num_frames !=0:
-            if cloudStorage==False: #Store JSON data on local machine
-                    num_frames = 0
-                    dest_filepath, dest_filename = process_video.save_data(kwargs["database"], batch_id)
-                    if transfer:
-                        remote_dest_file = os.path.join(remote_output_dir, dest_filename)
-                        cmd = f"rsync -avPL {dest_filepath} {user}@{ip}:{remote_dest_file}"
-                        subprocess.check_call(cmd, shell=True)
-                    process_video.rois = []
-                    batch_id += 1
-            else: # Store JSON data on Azure
-                    for i in range(900):
-                            red_data=str(tempData[i]["red_data"])
-                            green_data=str(tempData[i]["green_data"])
-                            blue_data=str(tempData[i]["blue_data"])
-                            collection_time=tempData[i]["collection_time"]
-                            batch_id=tempData[i]["batch_id"]
-                            location_id=tempData[i]["location_id"]
-                            cursor.execute("INSERT INTO dbo.testing(location_id,collection_time,batch_id,blue_data,green_data,red_data) VALUES (?,?,?,?,?,?)", (location_id,collection_time,batch_id,blue_data,green_data,red_data))
-                    cnxn.commit()
-                    tempData=[]
-
+            num_frames = -1
         num_frames += 1
 
         # Break if the "q" key is selected
@@ -185,6 +162,7 @@ def run_preprocess(process_video, **kwargs):
     # Pass this device and patient info to the preprocess function
     kwargs["device"] = device
     '''
+
     # Check if ROI locations are valid
     if kwargs["roi_locations"][0] == "full_face":
         kwargs["roi_locations"] = LOCATION_ID_CHOICES[:-1]
@@ -237,6 +215,7 @@ def video_file_cmd(**kwargs):
     """
     # Check that the file exists
     if not os.path.exists(kwargs["filename"]):
+        print(kwargs["filename"])
         raise Exception("The supplied file does not exist")
     
     filename = kwargs["filename"]
@@ -246,22 +225,21 @@ def video_file_cmd(**kwargs):
         mp4_file = filename.strip(".h264") + ".mp4"
         cmd = f"MP4Box -fps 30 -add {filename} {mp4_file}"
         subprocess.check_call(cmd, shell=True)
+        kwargs["filename"] = mp4_file
+
     elif filename.endswith(".mp4"):
         logging.info("MP4 file already exists")
-        mp4_file = filename
     else:
         raise Exception("Unrecognized file format")
 
-    kwargs["filename"] = mp4_file
-
+    # Create the process object
     process_video = ProcessVideo(
         filename=kwargs["filename"],
         matrix_decomposition=kwargs["matrix_decomposition"]
     )
-
     run_preprocess(process_video, **kwargs)
 
-    # Print to consolde for local_pipeline output
+    # Print to console for local_pipeline output
     print(process_video.base_dest_dir)
     return process_video.base_dest_dir
 
@@ -272,8 +250,7 @@ def video_file_cmd(**kwargs):
 @click.option("--database", is_flag=True)
 @click.option("--data_dir", required=False, default=os.getcwd())
 @click.option("--remote_output_dir")
-@click.option("--remote_ip")
-@click.option("--remote_user")
+@click.option("--remote_host")
 def video_stream(**kwargs):
     output_dir = video_stream_cmd(**kwargs)
 
@@ -295,7 +272,7 @@ def video_stream_cmd(**kwargs):
         matrix_decomposition=kwargs["matrix_decomposition"],
         data_dir=kwargs["data_dir"]
     )
-
+    
     run_preprocess(process_video, **kwargs)
     
     return process_video.data_dir

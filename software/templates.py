@@ -7,7 +7,9 @@ TIMEZONE = pytz.timezone("Canada/Pacific")
 SOFTWARE_DIR = os.environ.get("PULSE_TRACER_SOFTWARE_DIR")
 #PI_IP = "192.168.1.87" # rpi3 at home
 #PI_IP = "142.58.160.36"
-PI_IP = "142.58.166.83"
+#PI_IP = "142.58.166.83"
+#PI_IP = "173.180.192.226" # rpi4 at home
+PI_IP = "2001:569:7303:4900:20ab:3a2a:e901:79bc"
 
 # Choices and Lists
 LOCATION_ID_CHOICES = [

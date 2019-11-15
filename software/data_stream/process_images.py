@@ -17,7 +17,6 @@ from templates import (
     SOFTWARE_DIR
 )
 
-
 # Set up logging
 logging.basicConfig(format=LOGGING_FORMAT, stream=sys.stderr, level=logging.INFO)
 
@@ -216,10 +215,20 @@ class ProcessVideo(Process):
         ret, frame = self.video.read() 
         return frame
 
-    def save_data(self, database, batch_id):
+    def save_data(self, database, batch_id, cursor=None, cnxn=None):
         batch_id_str = "".join(["B", format(batch_id, "05")])
         if database:
-            print("database")
+            # Insert data into the database
+            for i in range(len(self.rois)):
+                red_data=str(self.rois[i]["red_data"])
+                green_data=str(self.rois[i]["green_data"])
+                blue_data=str(self.rois[i]["blue_data"])
+                collection_time=self.rois[i]["collection_time"]
+                batch_id=self.rois[i]["batch_id"]
+                location_id=self.rois[i]["location_id"]
+                # TODO: Add the device ID here so we can link the ROI data to the patient
+                cursor.execute("INSERT INTO dbo.testing(location_id,collection_time,batch_id,blue_data,green_data,red_data) VALUES (?,?,?,?,?,?)", (location_id,collection_time,batch_id,blue_data,green_data,red_data))
+            cnxn.commit()
         else:
             # Add batch ID to destination filename
             # Check if the base directory exists
@@ -233,4 +242,3 @@ class ProcessVideo(Process):
                 json.dump(self.rois, write_filename)
 
             return dest_file, filename + ".json"
-                      
