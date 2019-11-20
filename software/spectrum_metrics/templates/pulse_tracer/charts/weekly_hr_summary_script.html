@@ -3,14 +3,36 @@
     var myLineChart = new Chart(ctx, {
         type: 'line',
         data: {
-            //labels: {{ hr_labels }},
+            labels: JSON.parse(document.getElementById('hr_chart_labels').textContent),
             datasets: [{
                 label: "Heart Rate",
                 data: {{ hr_data }},
                 borderColor: 'rgba(51, 221, 255, 1)',
                 backgroundColor: 'rgba(51, 221, 255, 0.1)',
                 borderWidth: 1,
-            }]
+            }],
+        },
+        options: {
+            legend: {
+                display: false,
+            },
+            title: {
+                display: true,
+                text: 'Weekly Heart Rate Summary',
+                fontStyle: 'normal',
+                fontSize: 22,
+                fontFamily: 'Lato',
+            },
+            scales: {
+                yAxes: [{
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Beats Per Minute (bpm)',
+                        fontSize: 18,
+                        fontFamily: 'Lato',
+                    }
+                }],
+            }
         }
     });
 </script>

@@ -157,7 +157,7 @@ class DataSummaryView(LoginRequiredMixin, generic.TemplateView):
         current_user_id = request.user.id
         print(current_user_id)
         min_day= request.GET.get('datefrom') or '2019-11-01'
-        max_day = request.GET.get('dateto') or '2019-11-04'
+        max_day = request.GET.get('dateto') or '2018-11-04'
         
         print("SUMMARYYYYYYYYYYYYYYY")
         max_day= datetime.strptime(max_day, '%Y-%m-%d') #+ timedelta(days=1)
@@ -167,31 +167,33 @@ class DataSummaryView(LoginRequiredMixin, generic.TemplateView):
         
         print('Min Day:')
         print(min_day)
-        print(type(min_day))
         print('Max Day:')
-        print(max_day)
-        print(type(max_day))
+        print(max_day)    
 
         #min_day = pd.to_datetime(min_day).date()
         #max_day = pd.to_datetime(max_day).date()
+        #sumHR = RespiratoryRate.objects.filter(Q(analyzed_time=max_day,analyzed_time__gte=min_day)|Q(analyzed_time__gt=min_day)).order_by('analyzed_time')
 
-        print("GETTINNGGG DAYYYYYYY RANGE")
-        #sumHR= HeartRate.objects.all()
+        #sumHR = HeartRate.objects.filter(Q(analyzed_time=max_day,analyzed_time__gte=min_day)|Q(analyzed_time__gt=min_day)).order_by('analyzed_time')
+        #sumHR = HeartRate.objects.filter(analyzed_time__year=2019, analyzed_time__month=11, analyzed_time__day=4)
+
+        #sumHR = HeartRate.objects.filter(analyzed_time__range=[min_day, max_day])
+        #sumHR=HeartRate.objects.all()
+        #sumHR = sumHR.filter(Q(analyzed_time=max_day,analyzed_time__gte=min_day)|Q(analyzed_time__gt=min_day)).order_by('analyzed_time')
+
+        print("GETTINNGGG DAY RANGEEEE")
 
         #sumHR = HeartRate.objects.filter(Q(analyzed_time__lte=max_day,analyzed_time__gte=min_day)|Q(analyzed_time__gt=min_day)).order_by('analyzed_time')
+        #sumHR=HeartRate.objects.filter(analyzed_time__range=(min_day, max_day))  
         #sumHR = HeartRate.objects.filter(analyzed_time__gte = min_day, analyzed_time__lte=max_day )
         
-        sumHR=HeartRate.objects.filter(analyzed_time__date__range=(min_day, max_day) )
+        #sumHR = HeartRate.objects.filter(analyzed_time__gte = min_day)
+        #sumHR = HeartRate.objects.filter(Q(analyzed_time__lte=max_day,analyzed_time__gte=min_day)|Q(analyzed_time__gt=min_day)).order_by('analyzed_time')
+        sumHR=HeartRate.objects.filter(analyzed_time__range=(min_day, max_day))
         
-        #print(sumHR.query)
-        #print(sumHR)
-        #print("HR[0]:___________________")
-        #print(sumHR[0].analyzed_time)
-        #print(type(sumHR[0].analyzed_time))
+        print(sumHR.query)
+        print(sumHR)
 
-        #if sumHR[0].analyzed_time < max_day:
-        #    print("DATETIME TESTINNGGGGGG")
-        
         sumHR=sumHR.filter(patient_id=current_user_id)
         sumHR=sumHR.values('heart_rate','analyzed_time')
 
@@ -200,11 +202,33 @@ class DataSummaryView(LoginRequiredMixin, generic.TemplateView):
         dfHR['analyzed_time']=dfHR['analyzed_time'].dt.tz_localize(None)
         print("DATAFRAME____HR___")
         print(dfHR)
+        #dfHR['Index']=dfHR['analyzed_time']
+  
+        #print(dfHR.dtypes)
+        #print(type(min_day))
+        #dfHR=dfHR.loc[min_day:max_day]
+
+        #dfHR.set_index('Index', inplace=True)
+        
+        #print("DATAFRAME____HR___Before____Filter")
+        #print(dfHR.dtypes)
+        #print(dfHR)
+        #dfHR['analyzed_time'] = pd.to_datetime(dfHR['analyzed_time'])
+        #print(dfHR)
+    
+        #dfHR=dfHR[(dfHR['analyzed_time'] <= max_day)]
+        #print("DATAFRAME____HR____AFTER___Filter")
+        #print(type(max_day))
+        #dfHR['analyzed_time'] = pd.to_datetime(dfHR['analyzed_time'])
+        #dfHR=dfHR[dfHR['analyzed_time'] < max_day]
+        #dfHR=dfHR[(dfHR['analyzed_time'] <= max_day) & (dfHR['analyzed_time'] >= min_day)]
+    
+        #dfHR=dfHR[(dfHR['analyzed_time'] >min_day) & (dfHR['analyzed_time'] < max_day)]
+        #print(dfHR)
 
         ##RR filtering
-        #sumRR = RespiratoryRate.objects.filter(Q(analyzed_time=max_day,analyzed_time__gte=min_day)|Q(analyzed_time__gt=min_day)).order_by('analyzed_time')
-        sumRR=RespiratoryRate.objects.filter(analyzed_time__date__range=(min_day, max_day) )
-
+        sumRR = RespiratoryRate.objects.filter(Q(analyzed_time=max_day,analyzed_time__gte=min_day)|Q(analyzed_time__gt=min_day)).order_by('analyzed_time')
+        
         sumRR=sumRR.filter(patient_id=current_user_id)
     
         #print("DATAFRAME____RR___Before____Filter")
@@ -255,21 +279,13 @@ class DataSummaryView(LoginRequiredMixin, generic.TemplateView):
         print(last_hr)
         print(last_rr)
         '''
-        hr_labels= dfHR['timeStamp'].tolist()
-        hr_data= dfHR['avg_result'].tolist()
-        rr_data = dfRR['avg_result'].tolist()
-        context = {}
-        context = {
-            "hr_labels": hr_labels,
-            "hr_data": hr_data,
-            "rr_data": rr_data,
-        }
 
+        context = {}
         #hr_labels, hr_data, rr_data = query_scripts.get_weekly_summary(user)
-        #context = {
-        #    "hr_labels": ([1,2,3]),
-        #    "hr_data": ([1,2,3]),
-        #    "rr_data": ([1,2,3]),}
+        context = {
+            "hr_labels": ([1,2,3]),
+            "hr_data": ([1,2,3]),
+            "rr_data": ([1,2,3]),}
         return render(request, self.template_name, context)
 
 

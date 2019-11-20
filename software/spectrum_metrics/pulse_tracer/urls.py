@@ -1,4 +1,5 @@
 from django.urls import path, re_path
+from pulse_tracer import views
 
 from . import views
 

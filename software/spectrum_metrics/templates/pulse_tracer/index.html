@@ -1,45 +1,53 @@
 {% extends 'pulse_tracer/base_view.html' %}
 {% block content %}
-<h1>{{ user.first_name }}'s Dashboard</h1>
-<div class="card">
+<div class="jumbotron">
+    <h1 class="display-4">Welcome back, {{ user.first_name }}!</h1>
+    <p class="lead">Here's a quick summary of your recently calculated heart and respiratory rate data</p>
+    <hr class="my-4">
     <center>
-    <h2>Weekly Summary</h2>
+    <div class="row">
+        <div class="col">
+            <h2>Heart Rate</h2>
+            <h2 style="color: black;">{{latest_hr}}</h2>
+        </div>
+        <div class="col">
+            <h2>Respiratory Rate</h2>
+            <h2 style="color: black;">{{latest_rr}}</h2>
+        </div>
+    </div>
+    
+    <a class="btn btn-success btn-lg" href="{% url 'data_summary' %}" role="button">View more</a>
     </center>
 </div>
-<div class="card-columns d-flex justify-content-center">
-    <div class="card">
-        <div class="card-block">
-        {% if user.is_patient %}
-            <center>
-            <h2>Heart Rate Trend</h2>
-            </center>
+
+<div id="carouselExampleControls" class="carousel slide" data-ride="carousel">
+    <div class="carousel-inner">
+        <div class="carousel-item active">
             {% include "pulse_tracer/charts/weekly_hr_summary_div.html" %}
-        {% elif user.is_health_care %}
-            <center>
-            <h2>Heart Rate Trend</h2>
-            </center>
-            {% include "pulse_tracer/charts/weekly_hr_summary_div.html" %}
-        {% endif %}
+        </div>
+        <div class="carousel-item">
+            {% include "pulse_tracer/charts/weekly_rr_summary_div.html" %}
         </div>
     </div>
-    <div class="card">
-        <div class="card-block">
-        {% if user.is_patient %}
-            <center>
-            <h2> Respiratory Rate Trend</h2>
-            </center>
-            {% include "pulse_tracer/charts/weekly_rr_summary_div.html" %}
-        {% elif user.is_health_care %}
-            <center>
-            <h2> Respiratory Rate Trend</h2>
-            </center>
-            {% include "pulse_tracer/charts/weekly_rr_summary_div.html" %}
-        {% endif %}
-        </div>
-    </div>
+    <a class="carousel-control-prev" href="#carouselExampleControls" role="button" data-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="sr-only">Previous</span>
+    </a>
+    <a class="carousel-control-next" href="#carouselExampleControls" role="button" data-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="sr-only">Next</span>
+    </a>
 </div>
+
+
+<!-- Encode list for JS use -->
+{{ hr_labels|json_script:"hr_chart_labels"}}
+{{ hr_labels|json_script:"rr_chart_labels"}}
+
 {% endblock %}
 {% block scripts %}
-    {% include "pulse_tracer/charts/weekly_hr_summary_script.html" with hr_data=hr_data hr_labels=hr_labels %}
-    {% include "pulse_tracer/charts/weekly_rr_summary_script.html" with rr_data=rr_data hr_labels=hr_labels %}
+
+    {% include "pulse_tracer/charts/weekly_hr_summary_script.html" with hr_data=hr_data %}
+    {% include "pulse_tracer/charts/weekly_rr_summary_script.html" with rr_data=rr_data %}
 {% endblock %}
+
