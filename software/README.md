@@ -26,17 +26,27 @@ Next, create an environment and activate it:
 virtualenv pulse_tracer
 source pulse_tracer/bin/activate
 ```
+
+If you are installing the software on a Raspberry Pi, some additional steps are required before the requirements from `requirements.txt` can be installed. 
+```
+sudo apt-get install libatlas-base-dev libjasper-dev libqtgui4 python3-pyqt5 libqt4-test
+```
+
+You will also need to make some changes on the Raspberry Pi before you can install `pyodbc`. You can follow [this guide](http://mdupont.com/Blog/Raspberry-Pi/azure-python3.html#Resources) to do so. 
   
-Go into the software directory and install the requirements:
+Please note that if you are installing this on a Raspberry Pi 3b+ or lower, you will need to take some additional steps to install `dlib` and `opencv-python`. 
+
+Next, go into the software directory and install the requirements:
 ```
 cd capstone/software
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
   
 Setup
 ```
-python setup.py develop
+python3 setup.py develop
 ```
+
   
 ## Environment Variables
 In order to run the Pulse Tracer pipeline and access the Azure database, certain variables must be set. The following table identifies which variables need to be set on each machine, namely the Raspberry Pi running the preprocessing script, the machine running the Spectrum Metrics web application, and the machine running the downstream data analysis pipeline. Note that the variables required by the Raspberry Pi will also need to be set on your local machine if you launch the data collection script remotely. 
