@@ -72,6 +72,11 @@ class ROI(models.Model):
         default=False
     )
 
+    # Currently being analyzed
+    analysis_in_progress = models.BooleanField(
+        default=False
+    )
+
     # Device ID (FK)
     device = models.ForeignKey(
         "Device",

@@ -10,7 +10,7 @@ def main(output_filename, video_length):
     camera.resolution = (640, 480)
     camera.framerate = 30
     # camera.exposure_compensation = 6
-    # camera.awb_mode = 'shade'#'incandenscent' #'shade', 'auto', 'flash'
+    camera.awb_mode = 'shade'#'incandenscent' #'shade', 'auto', 'flash'
     camera.start_preview()
     camera.start_recording(output_filename)
     sleep(video_length)
