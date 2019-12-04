@@ -8,11 +8,11 @@
     <div class="row">
         <div class="col">
             <h2>Heart Rate</h2>
-            <h2 style="color: black;">{{latest_hr}}</h2>
+            <h2 style="color: black;">55</h2>
         </div>
         <div class="col">
             <h2>Respiratory Rate</h2>
-            <h2 style="color: black;">{{latest_rr}}</h2>
+            <h2 style="color: black;">15</h2>
         </div>
     </div>
     
@@ -39,15 +39,12 @@
     </a>
 </div>
 
-
 <!-- Encode list for JS use -->
 {{ hr_labels|json_script:"hr_chart_labels"}}
 {{ hr_labels|json_script:"rr_chart_labels"}}
-
 {% endblock %}
 {% block scripts %}
 
     {% include "pulse_tracer/charts/weekly_hr_summary_script.html" with hr_data=hr_data %}
     {% include "pulse_tracer/charts/weekly_rr_summary_script.html" with rr_data=rr_data %}
 {% endblock %}
-

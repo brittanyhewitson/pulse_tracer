@@ -6,26 +6,35 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.contrib.auth.forms import UserCreationForm
 from django.urls import reverse
+from datetime import date
+from django.shortcuts import render, get_object_or_404
+from django.views import generic
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
+from django.http import HttpResponseRedirect
+from django.contrib.auth.forms import UserCreationForm
+from django.urls import reverse
 from django.http import Http404
 import json
 import requests
 from django.http import JsonResponse
 # Create your views here.
-from pulse_tracer.models import Device,HeartRate,RespiratoryRate
+from pulse_tracer.models import Device,HeartRate,RespiratoryRate,Patient
 from rest_framework.views import APIView
 from rest_framework.response import Response
 #from django_pandas.io import read_frame
 from collections import defaultdict
 import pytz
 from django.db.models import Q
-from django.shortcuts import get_object_or_404
 import html
 import pandas as pd
 import numpy as np
 from django.http import JsonResponse
-from datetime import datetime,timedelta, date   
-from django.http import Http404
+from datetime import datetime,timedelta   
 
+
+import html
 
 from .models import(
     HealthCare,
@@ -41,106 +50,143 @@ from .forms import(
 )
 from .utils import query_scripts
 
+
 class IndexView(LoginRequiredMixin, generic.ListView):
-    template_name = 'pulse_tracer/index.html'
+    template_name = 'pulse_tracer/patient_index.html'
+
     def get(self, request, **kwargs):
         current_user_id = request.user.id
         user = get_object_or_404(User, id=current_user_id)
-        '''
+        print(current_user_id)
         if user.is_patient:
+            self.template_name = 'pulse_tracer/patient_index.html'
             patient = get_object_or_404(Patient, user__id=current_user_id)
-            labels, data = query_scripts.get_weekly_summary(patient)
             # TODO: Change template for patient
-            hr_labels, hr_data, rr_data = query_scripts.get_weekly_summary(user)
+            
+            #Get 7 days from today
+            today = date.today()
+            week_prior =  today - timedelta(weeks=1)
+            print(type(week_prior))
+        
+            #Filter HR data for 7 day range
+            lastItem = HeartRate.objects.filter(Q(analyzed_time=today,analyzed_time__gte=week_prior)|Q(analyzed_time__gt=week_prior)).order_by('analyzed_time')
+            
+            #Filter HR data based on ID
+            lastItem=lastItem.filter(patient_id=current_user_id)
+            
+            #Filter RR data for 7 day range and based on ID
+            lastItemRR = RespiratoryRate.objects.filter(Q(analyzed_time=today,analyzed_time__gte=week_prior)|Q(analyzed_time__gt=week_prior)).order_by('analyzed_time')
+            lastItemRR = lastItemRR.filter(patient_id=current_user_id)
+            print("INDEXXXXXXXXX")
+            print(current_user_id)
+
+            #Extract only 'heart_rate', and 'analyzed_time' of HR and RR
+            lastItem=lastItem.values('heart_rate','analyzed_time')
+            lastItemRR=lastItemRR.values('respiratory_rate','analyzed_time')
+            
+            #Add HR and RR to dataframes
+            df = pd.DataFrame(lastItem)
+            dfRR = pd.DataFrame(lastItemRR)
+
+            #Round down timestamp. E.g: 22:45:00 -> 22:00:00
+            df['timeStamp'] = df['analyzed_time'].dt.to_period('H').dt.to_timestamp()
+            dfRR['timeStamp'] = dfRR['analyzed_time'].dt.to_period('H').dt.to_timestamp()
+
+            del df['analyzed_time']
+            del dfRR['analyzed_time']
+
+            df['heart_rate']= df['heart_rate'].apply(pd.to_numeric)
+            dfRR['respiratory_rate']= dfRR['respiratory_rate'].apply(pd.to_numeric)
+            
+            #Calculate average of HR and RR for each hour
+            df['avg_result'] = df.groupby(['timeStamp'])['heart_rate'].transform('mean')
+            dfRR['avg_result'] = dfRR.groupby(['timeStamp'])['respiratory_rate'].transform('mean')
+
+            del df['heart_rate']
+            del dfRR['respiratory_rate']
+
+            df=df.drop_duplicates()
+            dfRR=dfRR.drop_duplicates()
+
+            df['timeStamp']=df['timeStamp'].dt.strftime('%Y-%m-%d %H:%M:%S').tolist()
+            dfRR['timeStamp']=dfRR['timeStamp'].dt.strftime('%Y-%m-%d %H:%M:%S').tolist()
+            
+            data2=df.to_dict('records')
+            data2RR=dfRR.to_dict('records')
+            
+            #Add series to list for chart
+            hr_labels= df['timeStamp'].tolist()
+            hr_data= df['avg_result'].tolist()
+            rr_data = dfRR['avg_result'].tolist()
+            
+            #Extract the latest value of HR and RR based on "analyzed_time"
+            last_hr=HeartRate.objects.latest('analyzed_time').heart_rate
+            last_rr=RespiratoryRate.objects.latest('analyzed_time').respiratory_rate
+
+            context = {
+                "hr_labels": hr_labels,
+                "hr_data": hr_data,
+                "rr_data": rr_data,
+                "latest_hr":int(last_hr), 
+                "latest_rr":  int(last_rr)
+            }
+            return render(request, self.template_name, context)
+       
         elif user.is_health_care:
             # CHANGE THIS
             # TODO: Change template for health care provider
-            hr_labels, hr_data, rr_data = query_scripts.get_weekly_summary(user)
+            self.template_name = 'pulse_tracer/health_care_provider_index.html'
+            #hr_labels, hr_data, rr_data = query_scripts.get_weekly_summary(user)
+            
+            #Extract patients belong to specific physician
+            patients = Patient.objects.filter(health_care_provider__user__id=request.user.id)
+            if not patients:
+                patients = Patient.objects.all()            
+            
+            #Put the Query set to Datframe
+            df = pd.DataFrame(list(patients.values()))       
+            dfUser=df['user_id']
+        
+            dfHR = pd.DataFrame(list(HeartRate.objects.all().values()))    
+            
+            dfRR = pd.DataFrame(list(RespiratoryRate.objects.all().values()))    
+
+            # Inner join Patient schema with HR to get heart rate
+            dfPatientHR = pd.merge(dfUser, dfHR, left_on='user_id', right_on='patient_id', how='inner')
+            
+            #Get the latest value of each patient
+            dfPatientHR= dfPatientHR.sort_values('analyzed_time').groupby('patient_id').tail(1)
+            
+            # Inner join Patient schema with RR to get respiratory rate
+            dfPatientRR = pd.merge(dfUser, dfRR, left_on='user_id', right_on='patient_id', how='inner')
+            
+            #Get the latest value of each patient
+            dfPatientRR= dfPatientRR.sort_values('analyzed_time').groupby('patient_id').tail(1)
+
+            #Transform series into array for front-end rendering
+            arrHR= dfPatientHR['heart_rate'].values.tolist()
+            arrRR= dfPatientRR['respiratory_rate'].values.tolist()
+
             context = {
-            "hr_labels": hr_labels,
-            "hr_data": hr_data,
-            "rr_data": rr_data,
-        }
-        '''
-        #Get 7 days from today
-        today = date.today()
-        week_prior =  today - timedelta(weeks=1)
-        print(type(week_prior))
-    
-        #Filter HR data for 7 day range
-        lastItem = HeartRate.objects.filter(Q(analyzed_time=today,analyzed_time__gte=week_prior)|Q(analyzed_time__gt=week_prior)).order_by('analyzed_time')
+                "patients": patients,
+                "arrHR": arrHR,
+                "arrRR": arrRR,
+            }
         
-        #Filter HR data based on ID
-        lastItem=lastItem.filter(patient_id=current_user_id)
-        
-        #Filter RR data for 7 day range and based on ID
-        lastItemRR = RespiratoryRate.objects.filter(Q(analyzed_time=today,analyzed_time__gte=week_prior)|Q(analyzed_time__gt=week_prior)).order_by('analyzed_time')
-        lastItemRR = lastItemRR.filter(patient_id=current_user_id)
-        print("INDEXXXXXXXXX")
-        print(current_user_id)
-
-        #Extract only 'heart_rate', and 'analyzed_time' of HR and RR
-        lastItem=lastItem.values('heart_rate','analyzed_time')
-        lastItemRR=lastItemRR.values('respiratory_rate','analyzed_time')
-        
-        #Add HR and RR to dataframes
-        df = pd.DataFrame(lastItem)
-        dfRR = pd.DataFrame(lastItemRR)
-
-        #Round down timestamp. E.g: 22:45:00 -> 22:00:00
-        df['timeStamp'] = df['analyzed_time'].dt.to_period('H').dt.to_timestamp()
-        dfRR['timeStamp'] = dfRR['analyzed_time'].dt.to_period('H').dt.to_timestamp()
-
-        del df['analyzed_time']
-        del dfRR['analyzed_time']
-
-        df['heart_rate']= df['heart_rate'].apply(pd.to_numeric)
-        dfRR['respiratory_rate']= dfRR['respiratory_rate'].apply(pd.to_numeric)
-        
-        #Calculate average of HR and RR for each hour
-        df['avg_result'] = df.groupby(['timeStamp'])['heart_rate'].transform('mean')
-        dfRR['avg_result'] = dfRR.groupby(['timeStamp'])['respiratory_rate'].transform('mean')
-
-        del df['heart_rate']
-        del dfRR['respiratory_rate']
-
-        df=df.drop_duplicates()
-        dfRR=dfRR.drop_duplicates()
-
-        df['timeStamp']=df['timeStamp'].dt.strftime('%Y-%m-%d %H:%M:%S').tolist()
-        dfRR['timeStamp']=dfRR['timeStamp'].dt.strftime('%Y-%m-%d %H:%M:%S').tolist()
-        
-        data2=df.to_dict('records')
-        data2RR=dfRR.to_dict('records')
-        
-        #Add series to list for chart
-        hr_labels= df['timeStamp'].tolist()
-        hr_data= df['avg_result'].tolist()
-        rr_data = dfRR['avg_result'].tolist()
-        
-        #Extract the latest value of HR and RR based on "analyzed_time"
-        last_hr=HeartRate.objects.latest('analyzed_time').heart_rate
-        last_rr=RespiratoryRate.objects.latest('analyzed_time').respiratory_rate
-
-        context = {
-            "hr_labels": hr_labels,
-            "hr_data": hr_data,
-            "rr_data": rr_data,
-            "latest_hr":int(last_hr), 
-            "latest_rr":  int(last_rr)
-        }
         return render(request, self.template_name, context)
+
 
 class DataSummaryView(LoginRequiredMixin, generic.TemplateView):
     template_name = 'pulse_tracer/data_summary.html'
 
     def get(self, request, **kwargs):
         current_user_id = request.user.id
-        print(current_user_id)
+        user = get_object_or_404(User, id=current_user_id)
+        patient = get_object_or_404(Patient, **kwargs)
         
-        #Get day picked for fron end or default date
-        min_day= request.GET.get('datefrom') or '2019-11-01'
-        max_day = request.GET.get('dateto') or '2019-11-04'
+         #Get day picked for fron end or default date
+        min_day= request.GET.get('datefrom') or '2019-12-03'
+        max_day = request.GET.get('dateto') or '2019-12-04'
         
         print("SUMMARYYYYYYYYYYYYYYY")
         max_day= datetime.strptime(max_day, '%Y-%m-%d') #+ timedelta(days=1)
@@ -206,6 +252,7 @@ class DataSummaryView(LoginRequiredMixin, generic.TemplateView):
         }
 
         return render(request, self.template_name, context)
+
 
 
 # TODO: User permission required mixin here?
@@ -310,14 +357,15 @@ class PatientDetailView(LoginRequiredMixin, generic.DetailView):
     template_name = 'pulse_tracer/patient_detail.html'
 
     def get(self, request, **kwargs):
-        #patient = Patient.objects.get(user__id=request.user.id)
-        print("TESTT")
-        print(request.user.id)
-        patient = get_object_or_404(Patient, user__id=request.user.id)
+        patient = Patient.objects.get(user__id=request.user.id)
+        age = int((date.today() - patient.birth_date).days / 365.2425)
+        bmi = patient.weight / ((patient.height/100) ** 2)
+        bmi = float("{0:.2f}".format(bmi))
         context = {
-            'patient': patient
+            'patient': patient,
+            'age': age,
+            'bmi': bmi,
         }
-        print("TEST2")
         return render(request, self.template_name, context)
     
 
@@ -355,14 +403,4 @@ class PatientUpdateView(LoginRequiredMixin, generic.UpdateView):
             patient.save()
             return HttpResponseRedirect(reverse('patient'))
             
-class ChartDataRR(APIView):
-    authentication_classes = []
-    permission_classes = []
-    def get(self, request, format=None):
-        #id=IndexView.get.user__id
-        try:
-            #current_user_id = request.user.id
-            test={'current_user_id':5}
-        except:
-            raise Http404("No MyModel matches the given query.")
-        return Response(test)
+            

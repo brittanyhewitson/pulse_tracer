@@ -30,16 +30,25 @@ div .container {
     font-weight: 400;
 }
 
-div .container h1, h2{
-    font-family: 'Lato', sans-serif;
-    font-weight: 300;
-    color: #458895;
-}
 body h1, h2{
     font-family: 'Lato', sans-serif;
     font-weight: 300;
     color: #458895;
 }
+
+body h4{
+    font-family: 'Lato', sans-serif;
+    color: #3C5158;
+    font-size: 17px;
+    font-style: italic;
+}
+
+body p{
+    font-family: 'Lato', sans-serif;
+    color: #3C5158;
+    font-size: 17px;
+}
+
 .card{
     margin: 10px;
     padding: 10px 10px 10px 10px;
@@ -55,4 +64,14 @@ a .carousel-control-next-icon, .carousel-control-prev-icon {
     height: 12%;
     top: 15%;
     width: 35px;
+}
+
+.card a{
+    position: absolute;
+    bottom: 0px;
+    right: 5px;
+    font-family: 'Lato', sans-serif;
+    color: #3C5158;
+    font-size: 17px;
+    text-decoration: inherit;
 }

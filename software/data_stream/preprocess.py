@@ -6,6 +6,7 @@ import timeit
 import logging
 import datetime
 import subprocess
+#import pyodbc
 
 import numpy as np
 
@@ -18,7 +19,7 @@ from templates import (
     ROI_WORD_TO_NUM_MAP
 )
 
-
+from dbclient.spectrum_metrics import SpectrumApi, NotFoundError
 # Set up logging
 logging.basicConfig(
     format=LOGGING_FORMAT, 
@@ -26,6 +27,23 @@ logging.basicConfig(
     level=logging.INFO
 )
 
+spectrum_api = SpectrumApi()
+def server_configuration():
+    """
+    Configure the server so data can be sent to the Azure cloud database
+    """
+    dsn = 'rpitestsqlserverdatasource'
+    user = os.environ.get('AZURE_DB_USER')
+    database = os.environ.get('AZURE_DB', 'spectrum_metrics')
+    username = os.environ.get('AZURE_DB_USERNAME')
+    password = os.environ.get('AZURE_DB_PASSWORD')
+    try:
+        connString = 'DSN={0};UID={1};PWD={2};DATABASE={3};'.format(dsn,user,password,database)
+        cnxn = pyodbc.connect(connString)
+        return cnxn
+    except:
+        logging.error("Connection Error, Please Double Check")
+        
 
 def get_roi_data(process_video, **kwargs):
     """
@@ -35,16 +53,23 @@ def get_roi_data(process_video, **kwargs):
     #current_datetime = datetime.now(TIMEZONE)
     #process_video.batch_id = current_datetime.strftime("%Y%m%d%H%M%S")
     batch_id = 0
+    batch_ids = []
     transfer = False
+    cnxn = None
+    cursor = None
 
     try:
-        if kwargs["remote_user"] and kwargs["remote_output_dir"] and kwargs["remote_ip"]:
-            user = kwargs["remote_user"]
+        if kwargs["remote_host"] and kwargs["remote_output_dir"]:
+            remote_host = kwargs["remote_host"]
             remote_output_dir = kwargs["remote_output_dir"]
-            ip = kwargs["remote_ip"]
             transfer = True
     except KeyError:
         pass
+
+    #Create connection to the SQL Server
+    if kwargs["database"] == True:
+        cnxn = server_configuration()
+        cursor = cnxn.cursor()
 
     # Time the algorithm
     start = timeit.default_timer()
@@ -64,7 +89,7 @@ def get_roi_data(process_video, **kwargs):
         if not faces:
             continue
 
-        # Need to add function for comparing multiple detected faces here
+        # TODO: Need to add function for comparing multiple detected faces here
 
         # Get the landmarks
         process_video.get_landmarks(faces, kwargs["roi_locations"], batch_id)
@@ -75,16 +100,35 @@ def get_roi_data(process_video, **kwargs):
         # Save the data
         # TODO: Add counter here to count number of frames. Once it reaches
         # 900 (30 seconds of video) increment the counter 
-        num_frames += 1
         if num_frames == 10:
-            num_frames = 0
-            dest_filepath, dest_filename = process_video.save_data(kwargs["database"], batch_id)
+            # Store JSON data on local machine
+            dest_filepath, dest_filename = process_video.save_data(
+                                                kwargs["database"],
+                                                batch_id,
+                                                cursor,
+                                                cnxn,
+                                            )
             if transfer:
                 remote_dest_file = os.path.join(remote_output_dir, dest_filename)
-                cmd = f"rsync -avPL {dest_filepath} {user}@{ip}:{remote_dest_file}"
+                cmd = f"rsync -avPL {dest_filepath} {remote_host}:{remote_dest_file}"
                 subprocess.check_call(cmd, shell=True)
+            '''
+            for roi in process_video.rois:
+                roi_data = spectrum_api.get_or_create(
+                    'ROI',
+                    red_data=str(roi["red_data"]),
+                    green_data=str(roi["green_data"]),
+                    blue_data=str(roi["blue_data"]),
+                    collection_time=roi["collection_time"],
+                    batch_id=batch_id,
+                    location_id=roi["location_id"],
+                )
+            '''
             process_video.rois = []
+            batch_ids.append(batch_id)
             batch_id += 1
+            num_frames = -1
+        num_frames += 1
 
         # Break if the "q" key is selected
         if cv2.waitKey(1) & 0xFF == ord("q"):
@@ -98,12 +142,13 @@ def get_roi_data(process_video, **kwargs):
     # When everything is done, release the capture
     process_video.release()
 
-    return process_video.rois
+    return process_video.rois, batch_ids
 
 def run_preprocess(process_video, **kwargs):
     """
     For both stream and video
     """
+    #spectrum_api = SpectrumApi()
     # Get the local device metadata
     serial_number = os.environ.get("DEVICE_SERIAL_NUMBER")
     device_model = os.environ.get("DEVICE_MODEL")
@@ -111,14 +156,14 @@ def run_preprocess(process_video, **kwargs):
     # Ensure the metadata is not None
     if serial_number is None or device_model is None:
         raise Exception("Please ensure the device has a serial number and model")
-
-    '''
+    
     # Get the device object from the database
     device = spectrum_api.get_or_create(
         "devices", 
         device_model=device_model,
         serial_number=serial_number,
     )
+    device_id = device["id"]
 
     # Get the patient associated with this device in the database
     try:
@@ -126,13 +171,13 @@ def run_preprocess(process_video, **kwargs):
             "patients",
             device__id=device["id"]
         )
+        
     except NotFoundError:
-        id = device["id"]
         raise Exception(f"Please register the patient associated with device {id} on the database")
     
     # Pass this device and patient info to the preprocess function
-    kwargs["device"] = device
-    '''
+    process_video.device = device_id
+
     # Check if ROI locations are valid
     if kwargs["roi_locations"][0] == "full_face":
         kwargs["roi_locations"] = LOCATION_ID_CHOICES[:-1]
@@ -149,7 +194,9 @@ def run_preprocess(process_video, **kwargs):
 
     kwargs["roi_locations"] = roi_locations
 
-    roi_data = get_roi_data(process_video, **kwargs)
+    roi_data, batch_ids = get_roi_data(process_video, **kwargs)
+
+    return roi_data, batch_ids
 
 
 @click.group()
@@ -167,7 +214,7 @@ def video_type():
 @click.option("--matrix_decomposition", is_flag=True)
 @click.option("--database", is_flag=True)
 def video_file(**kwargs):
-    output_dir = video_file_cmd(**kwargs)
+    output_dir, batch_ids = video_file_cmd(**kwargs)
 
 
 def video_file_cmd(**kwargs):
@@ -194,24 +241,23 @@ def video_file_cmd(**kwargs):
         mp4_file = filename.strip(".h264") + ".mp4"
         cmd = f"MP4Box -fps 30 -add {filename} {mp4_file}"
         subprocess.check_call(cmd, shell=True)
+        kwargs["filename"] = mp4_file
+
     elif filename.endswith(".mp4"):
         logging.info("MP4 file already exists")
-        mp4_file = filename
     else:
         raise Exception("Unrecognized file format")
 
-    kwargs["filename"] = mp4_file
-
+    # Create the process object
     process_video = ProcessVideo(
         filename=kwargs["filename"],
         matrix_decomposition=kwargs["matrix_decomposition"]
     )
+    roi_data, batch_ids = run_preprocess(process_video, **kwargs)
 
-    run_preprocess(process_video, **kwargs)
-
-    # Print to consolde for local_pipeline output
+    # Print to console for local_pipeline output
     print(process_video.base_dest_dir)
-    return process_video.base_dest_dir
+    return process_video.base_dest_dir, batch_ids
 
 
 @video_type.command()
@@ -220,10 +266,9 @@ def video_file_cmd(**kwargs):
 @click.option("--database", is_flag=True)
 @click.option("--data_dir", required=False, default=os.getcwd())
 @click.option("--remote_output_dir")
-@click.option("--remote_ip")
-@click.option("--remote_user")
+@click.option("--remote_host")
 def video_stream(**kwargs):
-    output_dir = video_stream_cmd(**kwargs)
+    output_dir, batch_ids = video_stream_cmd(**kwargs)
 
 
 def video_stream_cmd(**kwargs):
@@ -243,10 +288,10 @@ def video_stream_cmd(**kwargs):
         matrix_decomposition=kwargs["matrix_decomposition"],
         data_dir=kwargs["data_dir"]
     )
-
-    run_preprocess(process_video, **kwargs)
     
-    return process_video.data_dir
+    roi_data, batch_ids = run_preprocess(process_video, **kwargs)
+    
+    return process_video.data_dir, batch_ids
 
 
 if __name__=='__main__':

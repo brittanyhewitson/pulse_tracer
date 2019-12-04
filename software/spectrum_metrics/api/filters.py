@@ -39,7 +39,10 @@ class ROIFilters(filters.FilterSet):
             "device": ["exact"],
             "device__id": ["exact"],
             "device__serial_number": ["exact"],
-            "collection_time": ["exact", "lt", "lte", "gt", "gte"]
+            "collection_time": ["exact", "lt", "lte", "gt", "gte"],
+            "hr_analyzed": ["exact"],
+            "rr_analyzed": ["exact"],
+            "analysis_in_progress": ["exact"]
         }
 
 

@@ -30,8 +30,8 @@
                 {% endfor %}
                 </p>
             {% endfor %}
-            
-            <button type="submit" class="btn btn-info">Next</button>
+            <a href="{% url 'patient' %}" class="btn btn-danger">Cancel</a>
+            <button type="submit" class="btn btn-success">Save</button>
         </form>
     </div>
 {% endblock %}

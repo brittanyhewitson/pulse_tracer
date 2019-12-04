@@ -98,6 +98,7 @@ def fd_bss_cmd(**kwargs):
         batch_re = r"^[\w]*(B\d{5,})[\w]*.json$"
         # Get the data from the JSON filepath
         data = []
+        # TODO: Check that filepath exists
         for filename in os.listdir(kwargs["json_filepath"]):
             if filename.endswith(".json"):
                 full_path = os.path.join(kwargs["json_filepath"], filename)

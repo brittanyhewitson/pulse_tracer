@@ -3,7 +3,7 @@ import scipy
 import scipy.signal
 import scipy.special
 import matplotlib.pyplot as plt
-import pywt
+#import pywt
 
 def SST_STFT(x, lowFreq, highFreq, alpha, h=None, Dh=None, tDS=1, Smooth=True, Hemi=True):
     # function [tfr, tfrtic, tfrsq, tfrsqtic] = sqSTFTbase(x, lowFreq, highFreq, alpha, tDS, h, Dh, Smooth, Hemi)

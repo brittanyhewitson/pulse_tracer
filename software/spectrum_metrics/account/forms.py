@@ -45,18 +45,29 @@ class SignUpForm(UserCreationForm):
 
 
 class CreatePatientForm(forms.ModelForm):
+    weight = forms.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        help_text='Weight in kg.'
+    )
+    height = forms.DecimalField(
+        max_digits=6,
+        decimal_places=2,
+        help_text='Height in cm.'
+    )
     class Meta:
         model = Patient
         fields = [
             'birth_date',
+            'gender',
             'weight',
             'height',
             'health_conditions',
-            'health_care_provider'
+            'health_care_provider',
         ]
 
         widgets = {
-            'birth_date': DatePickerInput(format='%d/%m/%Y')
+            'birth_date': DatePickerInput(format='%m/%d/%Y')
         }
 
 
