@@ -181,8 +181,8 @@ class DataSummaryView(LoginRequiredMixin, generic.TemplateView):
 
     def get(self, request, **kwargs):
         current_user_id = request.user.id
-        user = get_object_or_404(User, id=current_user_id)
-        patient = get_object_or_404(Patient, **kwargs)
+        patient = get_object_or_404(Patient, user__id=current_user_id)
+
         
          #Get day picked for fron end or default date
         min_day= request.GET.get('datefrom') or '2019-12-03'
