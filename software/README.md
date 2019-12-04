@@ -59,9 +59,9 @@ In order to run the Pulse Tracer pipeline and access the Azure database, certain
 | `AZURE_DB` | :heavy_check_mark: | | | |
 | `AZURE_DB_USERNAME` |:heavy_check_mark: | | | |
 | `AZURE_DB_PASSWORD` | :heavy_check_mark: | | | |
-| `SPECTRUM_METRIC_API_USERNAME` | | :heavy_check_mark: | :heavy_check_mark: |
-| `SPECTRUM_METRIC_API_PASSWORD` | | :heavy_check_mark: | :heavy_check_mark: |
-| `SPECTRUM_METRIC_API_URL` | | :heavy_check_mark: | :heavy_check_mark: |
+| `SPECTRUM_API_USERNAME` | | :heavy_check_mark: | :heavy_check_mark: |
+| `SPECTRUM_API_PASSWORD` | | :heavy_check_mark: | :heavy_check_mark: |
+| `SPECTRUM_API_URL` | | :heavy_check_mark: | :heavy_check_mark: |
 
 Where `SPECTRUM_API_USERNAME` and `SPECTRUM_API_PASSWORD` are your credentials associated with the Spectrum Metrics Django app, and `DEVICE_SERIAL_NUMBER` and `DEVICE_MODEL` correspond to the serial number and model of the Pulse Tracer device running the code
   
