@@ -5,18 +5,6 @@ from analysis.run_pipeline import matrix_decomposition_cmd, fd_bss_cmd
 
 from templates import PI_IP
 
-from pynput.keyboard import Key, Listener
-
-
-def on_press(key):
-    print(f"{key} pressed")
-
-
-def on_release(key):
-    print(f"{key} released")
-    if key == Key.esc:
-        return False
- 
 
 def connect_to_client():
     """
@@ -47,7 +35,7 @@ def run_analysis_pipeline(preprocess_analysis, json_filepath, database=False):
         )
 
 
-def run_video_preprocess(video_file, roi_locations, preprocess_analysis, ssh_client=None):
+def run_video_preprocess(video_file, roi_locations, preprocess_analysis, database=False, ssh_client=None):
     """
     Runs the whole pipeline when supplying a video file
     """
@@ -69,18 +57,19 @@ def run_video_preprocess(video_file, roi_locations, preprocess_analysis, ssh_cli
             output_dir = stdout.read().decode("utf-8").strip("\n")
         # Otherwise log the error
         else:
-            logging.error(stderr.read())
+            logging.error(stderr.read().decode("utf-8").strip("\n"))
             raise Exception()
     else:
         if preprocess_analysis == "matrix_decomposition":
             matrix_decomposition = True
         else:
             matrix_decomposition = False
-        output_dir = video_file_cmd(
+
+        output_dir, batch_ids = video_file_cmd(
             filename=video_file,
             roi_locations=roi_locations,
             matrix_decomposition=matrix_decomposition,
-            database=False
+            database=database
         )
 
     # Check that the JSON output was successfully created

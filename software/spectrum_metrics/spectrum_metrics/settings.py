@@ -26,7 +26,7 @@ SECRET_KEY = os.environ.get('PULSE_TRACER_SECRET_KEY')
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'spectrummetrics.eastus.cloudapp.azure.com',
+    'spectrummetricswebapp.eastus.cloudapp.azure.com',
     '127.0.0.1',
 ]
 
@@ -86,7 +86,7 @@ WSGI_APPLICATION = 'spectrum_metrics.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
-'''
+
 DATABASES = {
     'default': {
         'ENGINE': 'sql_server.pyodbc',
@@ -101,8 +101,8 @@ DATABASES = {
         },
     },
 }
-'''
 
+'''
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -113,7 +113,7 @@ DATABASES = {
         'PORT': '5432',
     },
 }
-
+'''
 
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators

@@ -10,6 +10,7 @@ from datetime import datetime
 from templates import (
     LOGGING_FORMAT,
     TIMEZONE,
+    PREPROCESS_CHOICES,
 )
 from helpers import (
     run_video_preprocess,
@@ -26,7 +27,9 @@ logging.basicConfig(
 @click.command()
 @click.argument("input_dir", nargs=1)
 @click.argument("roi_locations", nargs=-1)
-def main(input_dir, roi_locations):
+@click.option("--database", is_flag=True)
+@click.option("--preprocess_analysis", default="fd_bss", type=click.Choice(PREPROCESS_CHOICES), help="The preprocessing algorithm used for the downstream analysis")
+def main(input_dir, roi_locations, database, preprocess_analysis):
     """
 
     """
@@ -57,7 +60,8 @@ def main(input_dir, roi_locations):
             output_dir = run_video_preprocess(
                 video_file=video_file,
                 roi_locations=roi_locations,
-                preprocess_analysis=preprocess_analysis
+                preprocess_analysis=preprocess_analysis,
+                database=database
             )
             
             # Move the video file 
@@ -65,11 +69,13 @@ def main(input_dir, roi_locations):
             processed_file = os.path.join(processed_dir, files[0])
             shutil.move(video_file, processed_file)
             
+            '''
             # Run the analysis pipeline
             run_analysis_pipeline(
                 preprocess_analysis=preprocess_analysis,
                 json_filepath=output_dir,
             )
+            '''
             
         else:
             time.sleep(2)

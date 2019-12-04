@@ -82,13 +82,14 @@ class ProcessStream(Process):
                     batch_id=self.rois[i]["batch_id"]
                     location_id=self.rois[i]["location_id"]
                     # TODO: Add the device ID here so we can link the ROI data to the patient
-                    cursor.execute("INSERT INTO dbo.testing(location_id,collection_time,batch_id,blue_data,green_data,red_data) VALUES (?,?,?,?,?,?)", (location_id,collection_time,batch_id,blue_data,green_data,red_data))
+                    cursor.execute("INSERT INTO dbo.pulse_tracer_roi(location_id,collection_time,batch_id,blue_data,green_data,red_data,device_id,hr_analyzed,rr_analyzed,analysis_in_progress) VALUES (?,?,?,?,?,?,?,?,?,?)", (location_id,collection_time,batch_id,blue_data,green_data,red_data,self.device,False,False,False))
                 cnxn.commit()
+                # TODO: FIX THIS
+                return None, None
         else:
             # Check if the base directory exists
             if not os.path.exists(self.data_dir):
                 os.makedirs(self.data_dir)
-
             # Add batch ID to destination filename
             filename = "_".join([self.output_filename, batch_id_str])
             dest_file = os.path.join(self.data_dir, filename)
@@ -96,3 +97,4 @@ class ProcessStream(Process):
                 json.dump(self.rois, write_filename)
 
             return dest_file, filename + ".json"
+

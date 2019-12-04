@@ -23,6 +23,7 @@ logging.basicConfig(format=LOGGING_FORMAT, stream=sys.stderr, level=logging.INFO
 
 class Process(object):
     def __init__(self, matrix_decomposition):
+        self.device = ""
         self.predictor = dlib.shape_predictor(os.path.join(SOFTWARE_DIR, "data/shape_predictor_68_face_landmarks.dat"))
         self.model = cv2.dnn.readNetFromCaffe(
             os.path.join(SOFTWARE_DIR,'data/deploy.prototxt.txt'), 
@@ -227,8 +228,10 @@ class ProcessVideo(Process):
                 batch_id=self.rois[i]["batch_id"]
                 location_id=self.rois[i]["location_id"]
                 # TODO: Add the device ID here so we can link the ROI data to the patient
-                cursor.execute("INSERT INTO dbo.testing(location_id,collection_time,batch_id,blue_data,green_data,red_data) VALUES (?,?,?,?,?,?)", (location_id,collection_time,batch_id,blue_data,green_data,red_data))
+                cursor.execute("INSERT INTO dbo.pulse_tracer_roi(location_id,collection_time,batch_id,blue_data,green_data,red_data,device_id,hr_analyzed,rr_analyzed,analysis_in_progress) VALUES (?,?,?,?,?,?,?,?,?,?)", (location_id,collection_time,batch_id,blue_data,green_data,red_data,self.device,False,False,False))
             cnxn.commit()
+            # TODO: FIX THIS
+            return None, None
         else:
             # Add batch ID to destination filename
             # Check if the base directory exists

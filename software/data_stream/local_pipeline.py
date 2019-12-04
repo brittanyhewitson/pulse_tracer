@@ -9,12 +9,12 @@ import time
 from datetime import datetime
 #from pynput.keyboard import Key, Listener
 
+from templates import PI_IP
+
 from helpers import (
     connect_to_client,
     run_video_preprocess,
     run_analysis_pipeline,
-    on_press, 
-    on_release,
 )
 from templates import (
     LOGGING_FORMAT,
@@ -47,9 +47,10 @@ def local_video(**kwargs):
     Run analysis pipeline on video existing on local machine
     """
     output_dir = run_video_preprocess(
-        video_file=kwargs["input_file"],
+        video_file=input_video,
         roi_locations=kwargs["roi_locations"],
-        preprocess_analysis=kwargs["preprocess_analysis"]
+        preprocess_analysis=kwargs["preprocess_analysis"],
+        database=False
     )
 
     run_analysis_pipeline(
@@ -64,6 +65,7 @@ def local_video(**kwargs):
 @click.option("--preprocess_analysis", default="fd_bss", type=click.Choice(PREPROCESS_CHOICES), help="The preprocessing algorithm used for the downstream analysis")
 @click.option("--output_filename", help="The name for the generated JSON files")
 @click.option("--destination_filepath", help="Full path to write the output JSON files on the local machine")
+@click.option("--database", is_flag=True)
 @click.option("--video_length", default="30", help="Length of the video to record on the Raspberry Pi")
 def remote_video(**kwargs):
     """
@@ -84,23 +86,24 @@ def remote_video(**kwargs):
     if kwargs["output_filename"] is None:
         # TODO: Add nice error classes instead of raising exceptions
         raise Exception("Missing an output filename")
-    if kwargs["destination_filepath"] is None:
+    if kwargs["destination_filepath"] is None and not kwargs["database"]:
         raise Exception("Missing the filepath to the data destination on local machine")
 
     # Add "matrix_decomposition" to the end of the file if necessary
     if kwargs["preprocess_analysis"] == "matrix_decomposition":
         kwargs["output_filename"] = "_".join([kwargs["output_filename"], "matrix_decomposition"])
+    
+    if kwargs["database"]:
+        database = True
+    else:
+        database = False
 
     # Create the name of the remote output location
     remote_output_file = os.path.join(
         "/home/pi/Desktop",
         kwargs["output_filename"] + ".h264"
     )
-    base_local_output_filepath = kwargs["destination_filepath"]
-    local_output_filepath = os.path.join(
-        kwargs["destination_filepath"], 
-        kwargs["output_filename"]
-    )
+    
     # TODO: Check if the file already exists and delete it if it does
 
     # Record the video on the pi
@@ -115,26 +118,35 @@ def remote_video(**kwargs):
         logging.error(stderr.read())
         # TODO: Nice error class here
         raise Exception()
-
-    # Remotely run preprocess on the data collected on the Raspberry Pi
-    output_dir = run_video_preprocess(
+    
+    # Remotely run preprocess on the data collected by the Raspberry Pi
+    output_dir, batch_ids = run_video_preprocess(
         video_file=remote_output_file, 
         roi_locations=kwargs["roi_locations"],
         preprocess_analysis=kwargs["preprocess_analysis"],
-        ssh_client=ssh_client
+        ssh_client=ssh_client,
+        database=database,
     )
 
-    # TODO: Check if output file already exists on local and delete if it does
-    logging.info("Copying video file to local machine")
-    # Make the local directory
-    if not os.path.exists(base_local_output_filepath):
-        os.makedirs(base_local_output_filepath)
+    if not kwargs["database"]:
+        base_local_output_filepath = kwargs["destination_filepath"]
+        local_output_filepath = os.path.join(
+            kwargs["destination_filepath"], 
+            kwargs["output_filename"]
+        )
+        # TODO: Check if output file already exists on local and delete if it does
+        logging.info("Copying video file to local machine")
+        # Make the local directory
+        if not os.path.exists(base_local_output_filepath):
+            os.makedirs(base_local_output_filepath)
 
-    # Rsync the file from the Raspberry Pi to the local
-    cmd = f"rsync -avPL pi@{PI_IP}:{output_dir} {base_local_output_filepath}"
-    subprocess.check_call(cmd, shell=True)
-    # TODO: Check the files were copied correctly before closing the SSH client
-    ssh_client.close()
+        # Rsync the file from the Raspberry Pi to the local
+        cmd = f"rsync -avPL pi@{PI_IP}:{output_dir} {base_local_output_filepath}"
+        subprocess.check_call(cmd, shell=True)
+        # TODO: Check the files were copied correctly (checksum/filesize) before closing the SSH client
+        ssh_client.close()
+    else:
+        local_output_filepath = None
 
     # Run the analysis pipeline
     # TODO: Batch ID not required here? change in run_pipeline.py
@@ -145,10 +157,11 @@ def remote_video(**kwargs):
     
 
 @input_type.command()
-# TODO: Add database flag
 @click.argument("destination_filepath")
 @click.argument("roi_locations", nargs=-1)
+@click.option("--database", is_flag=True)
 @click.option("--preprocess_analysis", default="fd_bss", type=click.Choice(PREPROCESS_CHOICES), help="The preprocessing algorithm used for the downstream analysis")
+@click.option("--video_length", default=30, help="Length of the video segments for processing")
 def remote_stream(**kwargs):
     """
     Remotely access the Raspberry Pi to stream the camera
@@ -164,18 +177,21 @@ def remote_stream(**kwargs):
     ssh_client = connect_to_client()
     sftp_client = ssh_client.open_sftp()
 
-    # TODO: Add preprocess analysis argument here
-
     if not os.path.exists(kwargs["destination_filepath"]):
         os.makedirs(kwargs["destination_filepath"])
-        
-    destination_filepath = kwargs["destination_filepath"]
 
-    # TODO: Make this an argument
-    video_length = 10
+    # Create arguments for the command 
+    destination_filepath = kwargs["destination_filepath"]
+    video_length = kwargs["video_length"]
+    preprocess_analysis = kwargs["preprocess_analysis"]
 
     # Launch script to check for data in the output
-    cmd = f"python3 check_local_files.py {destination_filepath} left_cheek"
+    cmd = f"python3 check_local_files.py {destination_filepath}"
+    for roi in kwargs["roi_locations"]:
+        cmd += f" {roi}"
+    if kwargs["database"]:
+        cmd += " --database"
+    cmd += f" --preprocess_analysis {preprocess_analysis}"
     proc = subprocess.Popen(cmd, shell=True, stdin=None, stdout=None, stderr=None, close_fds=True)
 
     # Copy data from the Raspberry Pi to the local machine
@@ -208,16 +224,6 @@ def remote_stream(**kwargs):
             logging.error(stderr.read())
             raise Exception()
     
-    '''
-    with Listener(on_press=on_press, on_release=on_release) as listener:           
-        # When the esc key is pressed on the local machine stop recording
-        # on the Raspberry Pi camera
-        while True:
-            print("1")
-        listener.join()
-            #break
-        ssh_client.close()
-    '''
     sftp_client.close()
     ssh_client.close()          
 
