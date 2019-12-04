@@ -2,5 +2,68 @@
 {% block content %}
     <div class="container">
         <p>Data Summary View</p>
+        <p>TESTINGGGGGGG</p>
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+        <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js" defer>
+        
+        </script>
+        <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+            <form id="filterform" method="GET" action="">
+
+                <input type="text" id="daterange" value="10/01/2019 - 11/30/2019" />
+                
+                <input type="hidden" name="datefrom" value="2018-01-01"/>
+                <input type="hidden" name="dateto"  value="2018-01-15"/>
+            </form>
+
+        <script type="text/javascript">
+            $(function() {       
+                // var hashUrl = window.location.search;
+                // if(hashUrl === "" || hashUrl.search('datefrom') === -1) {
+                //     $('#filterform').submit();
+                // }         
+                $('#daterange').daterangepicker({
+                    opens: 'left',
+                    autoUpdateInput: true
+                }, function(start, end, label) {
+                    $('input[name="datefrom"]').val(start.format('YYYY-MM-DD'));
+                    $('input[name="dateto"]').val(end.format('YYYY-MM-DD'));
+                    console.log("A new date selection was made: " + start.format('YYYY-MM-DD') + ' to ' + end.format('YYYY-MM-DD'));
+                    $('#filterform').submit();
+                });
+            }); 
+        </script>
     </div>
+    <div id="carouselExampleControls" class="carousel slide" data-ride="carousel">
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                {% include "pulse_tracer/charts/weekly_hr_summary_div.html" %}
+            </div>
+            <div class="carousel-item">
+                {% include "pulse_tracer/charts/weekly_rr_summary_div.html" %}
+            </div>
+        </div>
+        <a class="carousel-control-prev" href="#carouselExampleControls" role="button" data-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="sr-only">Previous</span>
+        </a>
+        <a class="carousel-control-next" href="#carouselExampleControls" role="button" data-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="sr-only">Next</span>
+        </a>
+    </div>
+    
+    
+    <!-- Encode list for JS use -->
+{{ hr_labels|json_script:"hr_chart_labels"}}
+{{ hr_labels|json_script:"rr_chart_labels"}}
+    
 {% endblock %}
+{% block scripts %}
+
+    {% include "pulse_tracer/charts/weekly_hr_summary_script.html" with hr_data=hr_data %}
+    {% include "pulse_tracer/charts/weekly_rr_summary_script.html" with rr_data=rr_data %}
+{% endblock %}
+
+
