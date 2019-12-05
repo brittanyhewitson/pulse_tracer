@@ -2,6 +2,7 @@ from django.db import models
 from django_filters import rest_framework as filters
 from pulse_tracer.models import(
     Device,
+    Batch,
     ROI,
     Patient,
     HealthCare,
@@ -19,6 +20,7 @@ class BaseFilterSet(filters.FilterSet):
             models.OneToOneField: {"filter_class": filters.CharFilter}
         }
 
+
 class DeviceFilters(filters.FilterSet):
     class Meta:
         model = Device
@@ -29,13 +31,24 @@ class DeviceFilters(filters.FilterSet):
         }
 
 
+class BatchFilters(filters.FilterSet):
+    class Meta:
+        model = Batch
+        fields = {
+            "id": ["exact", "lt", "lte"],
+            "preprocessing_analysis": ["exact"],
+            "device__id": ["exact"],
+            "creation_time": ["exact"],
+        }
+
+
 class ROIFilters(filters.FilterSet):
     class Meta:
         model = ROI
         fields = {
             "id": ["exact"],
             "location_id": ["exact"],
-            "batch_id": ["exact", "lt", "lte", "gt", "gte"],
+            "batch__id": ["exact"],
             "device": ["exact"],
             "device__id": ["exact"],
             "device__serial_number": ["exact"],
@@ -92,8 +105,8 @@ class HeartRateFilters(filters.FilterSet):
             "patient": ["exact"],
             "patient__id": ["exact"],
             "analyzed_time": ["exact", "lt", "lte", "gt", "gte"],
-            "roi": ["exact"],
-            "roi__location_id": ["exact"]
+            #"roi": ["exact"],
+            #"roi__location_id": ["exact"]
         }
 
 
@@ -104,6 +117,6 @@ class RespiratoryRateFilters(filters.FilterSet):
             "patient": ["exact"],
             "patient__id": ["exact"],
             "analyzed_time": ["exact", "lt", "lte", "gt", "gte"],
-            "roi": ["exact"],
-            "roi__location_id": ["exact"]
+            #"roi": ["exact"],
+            #"roi__location_id": ["exact"]
         }

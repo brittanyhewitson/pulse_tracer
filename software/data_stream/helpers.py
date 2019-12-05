@@ -21,16 +21,14 @@ def run_analysis_pipeline(preprocess_analysis, json_filepath, database=False):
     """
     Runs the data analysis given a filepath to a JSON file holding the ROI data
     """
-    if preprocess_analysis == "fd_bss":
+    if preprocess_analysis == "FDBSS":
         fd_bss_cmd(
             json_filepath=json_filepath,
-            batch_id="batch_id",
             database=database
         )
     else:
         matrix_decomposition_cmd(
             json_filepath=json_filepath,
-            batch_id="batch_id",
             database=database
         )
 
@@ -47,8 +45,8 @@ def run_video_preprocess(video_file, roi_locations, preprocess_analysis, databas
         cmd = f"source /home/pi/.bash_profile; source /home/pi/envs/pulse_tracer/bin/activate; python3 /home/pi/Desktop/capstone/software/data_stream/preprocess.py video-file {video_file}"
         for roi_location in roi_locations:
             cmd += f" {roi_location}"
-        if preprocess_analysis == "matrix_decomposition":
-            cmd += f" --matrix_decomposition"
+        if preprocess_analysis == "FDBSS":
+            cmd += f" --preprocess_analysis FDBSS"
         stdin, stdout, stderr = ssh_client.exec_command(cmd)
         exit_status = stdout.channel.recv_exit_status() 
 
@@ -60,15 +58,10 @@ def run_video_preprocess(video_file, roi_locations, preprocess_analysis, databas
             logging.error(stderr.read().decode("utf-8").strip("\n"))
             raise Exception()
     else:
-        if preprocess_analysis == "matrix_decomposition":
-            matrix_decomposition = True
-        else:
-            matrix_decomposition = False
-
         output_dir, batch_ids = video_file_cmd(
             filename=video_file,
             roi_locations=roi_locations,
-            matrix_decomposition=matrix_decomposition,
+            preprocess_analysis=preprocess_analysis,
             database=database
         )
 

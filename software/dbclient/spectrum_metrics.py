@@ -121,7 +121,6 @@ class SpectrumApi(object):
 
         try:
             result = next(list_results)
-            table = table.strip("s")
             raise Exception(f"More than one result for {table} with {fields}")
         except StopIteration:
             pass
@@ -135,7 +134,6 @@ class SpectrumApi(object):
                 table, 
                 **fields
             )
-            table = table.strip("s")
             id = new_object["id"]
             raise PostError(msg=f"Cannot create {table}.\
                 \nObject already exists with ID {id}")

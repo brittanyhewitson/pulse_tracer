@@ -43,15 +43,15 @@ class Camera(object):
 
 
 class ProcessStream(Process):
-    def __init__(self, matrix_decomposition, data_dir):
-        Process.__init__(self, matrix_decomposition)
+    def __init__(self, preprocess_analysis, data_dir):
+        Process.__init__(self, preprocess_analysis)
         self.cameras = []
         self.selected_cam = 0
         self.camera = Camera()
         self.cameras.append(self.camera)
         current_datetime = datetime.now(TIMEZONE)
         self.output_filename = current_datetime.strftime("%Y%m%d%H%M%S")
-        if matrix_decomposition == True:
+        if preprocess_analysis == "MD":
             self.output_filename = self.output_filename + "_matrix_decomp"
         self.data_dir = os.path.join(data_dir, self.output_filename)
 
@@ -79,10 +79,10 @@ class ProcessStream(Process):
                     green_data=str(self.rois[i]["green_data"])
                     blue_data=str(self.rois[i]["blue_data"])
                     collection_time=self.rois[i]["collection_time"]
-                    batch_id=self.rois[i]["batch_id"]
+                    batch_id=self.rois[i]["batch"]
                     location_id=self.rois[i]["location_id"]
                     # TODO: Add the device ID here so we can link the ROI data to the patient
-                    cursor.execute("INSERT INTO dbo.pulse_tracer_roi(location_id,collection_time,batch_id,blue_data,green_data,red_data,device_id,hr_analyzed,rr_analyzed,analysis_in_progress) VALUES (?,?,?,?,?,?,?,?,?,?)", (location_id,collection_time,batch_id,blue_data,green_data,red_data,self.device,False,False,False))
+                    cursor.execute("INSERT INTO dbo.pulse_tracer_roi(location_id,collection_time,batch_id,blue_data,green_data,red_data,device_id,hr_analyzed,rr_analyzed,analysis_in_progress,preprocessing_analysis) VALUES (?,?,?,?,?,?,?,?,?,?,?)", (location_id,collection_time,batch_id,blue_data,green_data,red_data,self.device,False,False,False,self.preprocess_analysis))
                 cnxn.commit()
                 # TODO: FIX THIS
                 return None, None

@@ -4,7 +4,6 @@ import sys
 import click
 import timeit
 import logging
-import datetime
 import subprocess
 import pyodbc
 import numpy as np
@@ -15,7 +14,8 @@ from templates import (
     LOGGING_FORMAT,
     TIMEZONE,
     LOCATION_ID_CHOICES,
-    ROI_WORD_TO_NUM_MAP
+    ROI_WORD_TO_NUM_MAP,
+    PREPROCESS_CHOICES
 )
 
 from dbclient.spectrum_metrics import SpectrumApi, NotFoundError
@@ -27,6 +27,7 @@ logging.basicConfig(
 )
 
 spectrum_api = SpectrumApi() 
+
 
 def rpi_server_config():
     """
@@ -55,10 +56,16 @@ def get_roi_data(process_video, **kwargs):
     """
     Processes a video to extract ROIs for each frame
     """
-    # TODO: Need something else for the batch ID here
-    #current_datetime = datetime.now(TIMEZONE)
-    #process_video.batch_id = current_datetime.strftime("%Y%m%d%H%M%S")
-    batch_id = 0
+    # Initialize batch ID
+    if kwargs["database"]:
+        batch_id = spectrum_api.create(
+                'batches',
+                preprocessing_analysis=process_video.preprocess_analysis,
+                creation_time=datetime.now(TIMEZONE).isoformat(),
+                device=process_video.device
+            )["id"]
+    else:
+        batch_id = 0
     batch_ids = []
     transfer = False
     cnxn = None
@@ -121,21 +128,19 @@ def get_roi_data(process_video, **kwargs):
                 remote_dest_file = os.path.join(remote_output_dir, dest_filename)
                 cmd = f"rsync -avPL {dest_filepath} {remote_host}:{remote_dest_file}"
                 subprocess.check_call(cmd, shell=True)
-            '''
-            for roi in process_video.rois:
-                roi_data = spectrum_api.get_or_create(
-                    'ROI',
-                    red_data=str(roi["red_data"]),
-                    green_data=str(roi["green_data"]),
-                    blue_data=str(roi["blue_data"]),
-                    collection_time=roi["collection_time"],
-                    batch_id=batch_id,
-                    location_id=roi["location_id"],
-                )
-            '''
             process_video.rois = []
             batch_ids.append(batch_id)
-            batch_id += 1
+
+            # Update the batch ID
+            if kwargs["database"]:
+                batch_id = spectrum_api.create(
+                    'batches',
+                    preprocessing_analysis=process_video.preprocess_analysis,
+                    creation_time=datetime.now(TIMEZONE).isoformat(),
+                    device=process_video.device
+                )["id"]
+            else:
+                batch_id += 1
             num_frames = -1
         num_frames += 1
 
@@ -220,7 +225,7 @@ def video_type():
 @video_type.command()
 @click.argument("filename", nargs=1)
 @click.argument("roi_locations", nargs=-1)
-@click.option("--matrix_decomposition", is_flag=True)
+@click.option("--preprocess_analysis", default="matrix_decomposition", type=click.Choice(PREPROCESS_CHOICES))
 @click.option("--database", is_flag=True)
 def video_file(**kwargs):
     output_dir, batch_ids = video_file_cmd(**kwargs)
@@ -260,7 +265,7 @@ def video_file_cmd(**kwargs):
     # Create the process object
     process_video = ProcessVideo(
         filename=kwargs["filename"],
-        matrix_decomposition=kwargs["matrix_decomposition"]
+        preprocess_analysis=kwargs["preprocess_analysis"]
     )
     roi_data, batch_ids = run_preprocess(process_video, **kwargs)
 
@@ -271,7 +276,7 @@ def video_file_cmd(**kwargs):
 
 @video_type.command()
 @click.argument("roi_locations", nargs=-1)
-@click.option("--matrix_decomposition", is_flag=True)
+@click.option("--preprocess_analysis", default="matrix_decomposition", type=click.Choice(PREPROCESS_CHOICES))
 @click.option("--database", is_flag=True)
 @click.option("--data_dir", required=False, default=os.getcwd())
 @click.option("--remote_output_dir")
@@ -294,7 +299,7 @@ def video_stream_cmd(**kwargs):
     """
     from camera import ProcessStream
     process_video = ProcessStream(
-        matrix_decomposition=kwargs["matrix_decomposition"],
+        preprocess_analysis=kwargs["preprocess_analysis"],
         data_dir=kwargs["data_dir"]
     )
     

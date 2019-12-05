@@ -1,6 +1,7 @@
 from rest_framework import viewsets
 from .serializers import (
     DeviceSerializer,
+    BatchSerializer,
     ROISerializer,
     ROICreateSerializer,
     PatientSerializer,
@@ -14,6 +15,7 @@ from .serializers import (
 
 from pulse_tracer.models import(
     Device,
+    Batch,
     ROI,
     Patient,
     HealthCare,
@@ -24,6 +26,7 @@ from pulse_tracer.models import(
 
 from api.filters import(
     DeviceFilters,
+    BatchFilters,
     ROIFilters,
     PatientFilters,
     HealthCareFilters,
@@ -41,6 +44,15 @@ class DeviceViewSet(viewsets.ModelViewSet):
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
     filter_class = DeviceFilters
+
+
+class BatchViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows users to be viewed or edited.
+    """
+    queryset = Batch.objects.all()
+    serializer_class = BatchSerializer
+    filter_class = BatchFilters
 
 
 class ROIViewSet(viewsets.ModelViewSet):
