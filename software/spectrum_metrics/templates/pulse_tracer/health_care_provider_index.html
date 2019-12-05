@@ -17,7 +17,8 @@
                 <tr>
                     <!-- TODO: Link the patient ID column to either patient
                     profile or the patient's data summary page-->
-                    <td><a href="{% url 'data_summary' %}">{{ patient }}</a></td>
+                    <td><a href="{% url 'data_summary' %}">{{ patient.id }}</a></td>
+                    
                     <td>{{ patient.user.first_name }}</td>
                     <td>{{ patient.user.last_name }}</td>
                     <td>55</td>
