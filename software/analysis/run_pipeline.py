@@ -6,8 +6,9 @@ import click
 import logging
 
 import numpy as np
+from datetime import datetime
 
-from dbclient.spectrum_metrics import SpectrumApi
+from dbclient.spectrum_metrics import SpectrumApi, PostError
 from analysis.analyses import FDAnalysis, MatrixAnalysis
 from templates import (
     TIMEZONE,
@@ -17,6 +18,45 @@ from templates import (
 # Set up logging
 logging.basicConfig(format=LOGGING_FORMAT, stream=sys.stderr, level=logging.INFO)
 
+spectrum_api = SpectrumApi()
+
+
+def update_analysis(analysis, batch):
+    """
+    """
+    # Gather all rois in batch
+    rois = spectrum_api.list_resources(
+        "rois", 
+        batch__id=batch
+    )
+    
+    if analysis == 'hr':
+        hr_analyzed = True
+        rr_analyzed = False
+        in_progress = True
+    elif analysis == 'rr':
+        hr_analyzed = True
+        rr_analyzed = True
+        in_progress = False
+    else:
+        logging.error(f"Unrecognized analysis type {analysis}. Skipping update")
+        return
+        
+    try:
+        # update each roi
+        for roi in rois:
+            roi_updated = spectrum_api.update(
+                    "rois",
+                    roi['id'],
+                    hr_analyzed=hr_analyzed,
+                    rr_analyzed=rr_analyzed,
+                    analysis_in_progress=in_progress
+                )
+    except PostError as p:
+        logging.error(p.msg)
+    except:
+        logging.info("Reattempt analysis on subsequent script call")
+
 
 @click.group()
 def preprocessing_algorithm():
@@ -24,8 +64,8 @@ def preprocessing_algorithm():
 
 
 @preprocessing_algorithm.command()
-@click.argument("json_filepath", nargs=1)
-@click.argument("batch_id", nargs=1)
+@click.option("--json_filepath")
+@click.option("--batch_id")
 @click.option("--database", is_flag=True)
 def matrix_decomposition(**kwargs):
     """
@@ -37,12 +77,19 @@ def matrix_decomposition_cmd(**kwargs):
     """
     """
     if kwargs["database"]:
-        spectrum_api = SpectrumApi()
-
         # Query the database for all ROI with this batch ID
         data = spectrum_api.list_resources(
             "rois", 
-            batch_id=kwargs["batch_id"]
+            batch__id=kwargs["batch_id"]
+        )
+
+        batch = spectrum_api.get(
+            "batches",
+            id=kwargs["batch_id"]
+        )
+        patient = spectrum_api.get(
+            "patients",
+            device=batch["device"]
         )
     else:
         batch_re = r"^[\w]*(B\d{5,})[\w]*.json$"
@@ -68,14 +115,40 @@ def matrix_decomposition_cmd(**kwargs):
     hr = roi_analysis.get_hr()
     logging.info(f"Calculated heart rate is {hr} bpm")
 
+    if kwargs["database"]:
+        # Create a HR object
+        hr_object = spectrum_api.create(
+            "heart_rates",
+            heart_rate=round(hr, 2),
+            analyzed_time=datetime.now(TIMEZONE).isoformat(),
+            batch=kwargs["batch_id"],
+            patient=patient["id"]
+        )
+
+        # Update the analysis
+        update_analysis("hr", kwargs["batch_id"])
+
     # Determine the respiratory rate
     rr = roi_analysis.get_rr()
     logging.info(f"Calculated respiratory rate is {rr} breaths")
 
+    if kwargs["database"]:
+        # Create a RR object
+        rr_object = spectrum_api.create(
+            "respiratory_rates",
+            respiratory_rate=round(rr, 2),
+            analyzed_time=datetime.now(TIMEZONE).isoformat(),
+            batch=kwargs["batch_id"],
+            patient=patient["id"]
+        )
+
+        # Update the analysis
+        update_analysis("rr", kwargs["batch_id"])
+
 
 @preprocessing_algorithm.command()
-@click.argument("json_filepath", nargs=1)
-@click.argument("batch_id", nargs=1)
+@click.option("--json_filepath")
+@click.option("--batch_id")
 @click.option("--database", is_flag=True)
 def fd_bss(**kwargs):
     """
@@ -92,7 +165,15 @@ def fd_bss_cmd(**kwargs):
         # Query the database for all ROI with this batch ID
         data = spectrum_api.list_resources(
             "rois", 
-            batch_id=kwargs["batch_id"]
+            batch__id=kwargs["batch_id"]
+        )
+        batch = spectrum_api.get(
+            "batches",
+            id=kwargs["batch_id"]
+        )
+        patient = spectrum_api.get(
+            "patients",
+            device=batch["device"]
         )
     else:
         batch_re = r"^[\w]*(B\d{5,})[\w]*.json$"
@@ -119,9 +200,35 @@ def fd_bss_cmd(**kwargs):
     hr = roi_analysis.get_hr()
     logging.info(f"Calculated heart rate is {hr} bpm")
 
+    if kwargs["database"]:
+        # Create a HR object
+        hr_object = spectrum_api.create(
+            "heart_rates",
+            heart_rate=round(hr, 2),
+            analyzed_time=datetime.now(TIMEZONE).isoformat(),
+            batch=kwargs["batch_id"],
+            patient=patient["id"]
+        )
+
+        # Update the analysis
+        update_analysis("hr", kwargs["batch_id"])
+
     # Determine the respiratory rate
     rr = roi_analysis.get_rr()
     logging.info(f"Calculated respiratory rate is {rr} breaths")
+
+    if kwargs["database"]:
+        # Create a RR object
+        rr_object = spectrum_api.create(
+            "respiratory_rates",
+            respiratory_rate=round(rr, 2),
+            analyzed_time=datetime.now(TIMEZONE).isoformat(),
+            batch=kwargs["batch_id"],
+            patient=patient["id"]
+        )
+
+        # Update the analysis
+        update_analysis("rr", kwargs["batch_id"])
 
 
 if __name__=='__main__':

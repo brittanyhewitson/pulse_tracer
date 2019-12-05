@@ -28,12 +28,11 @@ logging.basicConfig(
 @click.argument("input_dir", nargs=1)
 @click.argument("roi_locations", nargs=-1)
 @click.option("--database", is_flag=True)
-@click.option("--preprocess_analysis", default="fd_bss", type=click.Choice(PREPROCESS_CHOICES), help="The preprocessing algorithm used for the downstream analysis")
+@click.option("--preprocess_analysis", default="MD", type=click.Choice(PREPROCESS_CHOICES), help="The preprocessing algorithm used for the downstream analysis")
 def main(input_dir, roi_locations, database, preprocess_analysis):
     """
 
     """
-
     # Make sure the directory exists
     if not os.path.exists(input_dir):
         raise Exception(f"The input directory {input_dir} does not exist")

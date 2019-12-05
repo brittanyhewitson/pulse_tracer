@@ -41,7 +41,7 @@ def input_type():
 # TODO: Add database
 @click.argument("roi_locations", nargs=-1)
 @click.option("--input_file", help="The full path to the input file to run the analysis pipeline on")
-@click.option("--preprocess_analysis", default="fd_bss", type=click.Choice(PREPROCESS_CHOICES), help="The preprocessing algorithm used for the downstream analysis")
+@click.option("--preprocess_analysis", default="MD", type=click.Choice(PREPROCESS_CHOICES), help="The preprocessing algorithm used for the downstream analysis")
 def local_video(**kwargs):
     """
     Run analysis pipeline on video existing on local machine
@@ -62,7 +62,7 @@ def local_video(**kwargs):
 @input_type.command()
 # TODO: Add database flag
 @click.argument("roi_locations", nargs=-1)
-@click.option("--preprocess_analysis", default="fd_bss", type=click.Choice(PREPROCESS_CHOICES), help="The preprocessing algorithm used for the downstream analysis")
+@click.option("--preprocess_analysis", default="MD", type=click.Choice(PREPROCESS_CHOICES), help="The preprocessing algorithm used for the downstream analysis")
 @click.option("--output_filename", help="The name for the generated JSON files")
 @click.option("--destination_filepath", help="Full path to write the output JSON files on the local machine")
 @click.option("--database", is_flag=True)
@@ -90,7 +90,7 @@ def remote_video(**kwargs):
         raise Exception("Missing the filepath to the data destination on local machine")
 
     # Add "matrix_decomposition" to the end of the file if necessary
-    if kwargs["preprocess_analysis"] == "matrix_decomposition":
+    if kwargs["preprocess_analysis"] == "MD":
         kwargs["output_filename"] = "_".join([kwargs["output_filename"], "matrix_decomposition"])
     
     if kwargs["database"]:
@@ -160,7 +160,7 @@ def remote_video(**kwargs):
 @click.argument("destination_filepath")
 @click.argument("roi_locations", nargs=-1)
 @click.option("--database", is_flag=True)
-@click.option("--preprocess_analysis", default="fd_bss", type=click.Choice(PREPROCESS_CHOICES), help="The preprocessing algorithm used for the downstream analysis")
+@click.option("--preprocess_analysis", default="MD", type=click.Choice(PREPROCESS_CHOICES), help="The preprocessing algorithm used for the downstream analysis")
 @click.option("--video_length", default=30, help="Length of the video segments for processing")
 def remote_stream(**kwargs):
     """

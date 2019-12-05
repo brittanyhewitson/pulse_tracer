@@ -18,6 +18,7 @@ schema_view = get_schema_view(
 
 router = routers.DefaultRouter()
 router.register(r'devices', views.DeviceViewSet)
+router.register(r'batches', views.BatchViewSet)
 router.register(r'rois', views.ROIViewSet)
 router.register(r'patients', views.PatientViewSet)
 router.register(r'health_care_providers', views.HealthCareViewSet)

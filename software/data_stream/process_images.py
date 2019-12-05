@@ -22,7 +22,7 @@ logging.basicConfig(format=LOGGING_FORMAT, stream=sys.stderr, level=logging.INFO
 
 
 class Process(object):
-    def __init__(self, matrix_decomposition):
+    def __init__(self, preprocess_analysis):
         self.device = ""
         self.predictor = dlib.shape_predictor(os.path.join(SOFTWARE_DIR, "data/shape_predictor_68_face_landmarks.dat"))
         self.model = cv2.dnn.readNetFromCaffe(
@@ -40,7 +40,7 @@ class Process(object):
         self.frame = []
         self.gray_image = []
         self.batch_id = ""
-        self.matrix_decomposition = matrix_decomposition 
+        self.preprocess_analysis = preprocess_analysis 
 
     def rotate_image(self):
         rows, cols, color = self.frame.shape
@@ -115,9 +115,9 @@ class Process(object):
             cv2.circle(self.frame, (x_n, y_n), 2, (255, 0, 0), -1)
 
             # TODO: ADD ERROR CHEKCING IF COORDINATE IS OUT OF FRAME
-            if self.matrix_decomposition:
+            if self.preprocess_analysis == "MD":
                 roi = {
-                    'batch_id': batch_id,
+                    'batch': batch_id,
                     'collection_time': self.frame_time,
                     'location_id': n,
                     'red_data': str(self.frame[x_n, y_n, 2]),
@@ -135,7 +135,7 @@ class Process(object):
                 cv2.rectangle(self.frame, (x1, y1), (x2, y2), (255, 255, 0), 2)
 
                 roi = {
-                    'batch_id': batch_id,
+                    'batch': batch_id,
                     'collection_time': self.frame_time,
                     'location_id': n,
                     'red_data': self.frame[x2:x1, y2:y1, 2].tolist(),
@@ -200,11 +200,11 @@ class Process(object):
 
 
 class ProcessVideo(Process):
-    def __init__(self, filename, matrix_decomposition):
-        Process.__init__(self, matrix_decomposition)
+    def __init__(self, filename, preprocess_analysis):
+        Process.__init__(self, preprocess_analysis)
         self.video = cv2.VideoCapture(filename) 
         self.base_dest_dir = filename.strip(".mp4")
-        if matrix_decomposition == True:
+        if preprocess_analysis == "MD":
             if not self.base_dest_dir.endswith("_matrix_decomposition"):
                 self.base_dest_dir = self.base_dest_dir + "_matrix_decomposition"
 
@@ -225,10 +225,9 @@ class ProcessVideo(Process):
                 green_data=str(self.rois[i]["green_data"])
                 blue_data=str(self.rois[i]["blue_data"])
                 collection_time=self.rois[i]["collection_time"]
-                batch_id=self.rois[i]["batch_id"]
                 location_id=self.rois[i]["location_id"]
                 # TODO: Add the device ID here so we can link the ROI data to the patient
-                cursor.execute("INSERT INTO dbo.pulse_tracer_roi(location_id,collection_time,batch_id,blue_data,green_data,red_data,device_id,hr_analyzed,rr_analyzed,analysis_in_progress) VALUES (?,?,?,?,?,?,?,?,?,?)", (location_id,collection_time,batch_id,blue_data,green_data,red_data,self.device,False,False,False))
+                cursor.execute("INSERT INTO dbo.pulse_tracer_roi(location_id,collection_time,batch_id,blue_data,green_data,red_data,device_id,hr_analyzed,rr_analyzed,analysis_in_progress,preprocessing_analysis) VALUES (?,?,?,?,?,?,?,?,?,?,?)", (location_id,collection_time,batch_id,blue_data,green_data,red_data,self.device,False,False,False,self.preprocess_analysis))
             cnxn.commit()
             # TODO: FIX THIS
             return None, None
