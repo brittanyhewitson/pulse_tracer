@@ -1,8 +1,9 @@
 {% extends 'pulse_tracer/base_view.html' %}
 {% block content %}
+
     <div class="container">
-        <p>Data Summary View</p>
-        <p>TESTINGGGGGGG</p>
+        <h1 class="display-4"> Data Summary View</h1>
+        <p class="lead">Please Select Day Range You Want Check Your Data</p>
         <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
         <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
         <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js" defer>
@@ -11,10 +12,10 @@
         <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
             <form id="filterform" method="GET" action="">
 
-                <input type="text" id="daterange" value="10/01/2019 - 11/30/2019" />
+                <input type="text" id="daterange" value="11/15/2019 - 12/15/2019" />
                 
-                <input type="hidden" name="datefrom" value="2018-01-01"/>
-                <input type="hidden" name="dateto"  value="2018-01-15"/>
+                <input type="hidden" name="datefrom" value="2019-01-01"/>
+                <input type="hidden" name="dateto"  value="2020-01-15"/>
             </form>
 
         <script type="text/javascript">
