@@ -126,7 +126,8 @@ def get_roi_data(process_video, **kwargs):
     while(True):
         frame = process_video.get_frame()
         if frame is None:
-            batch_id, batch_ids = send_batch(process_video, kwargs["database"], batch_id, cursor, cnxn, transfer, batch_ids, remote_output_dir, remote_host)
+            if num_frames > 600:
+                batch_id, batch_ids = send_batch(process_video, kwargs["database"], batch_id, cursor, cnxn, transfer, batch_ids, remote_output_dir, remote_host)
             break
 
         # Add frame info to the class
@@ -150,7 +151,7 @@ def get_roi_data(process_video, **kwargs):
         # Save the data
         # TODO: Add counter here to count number of frames. Once it reaches
         # 900 (30 seconds of video) increment the counter 
-        if num_frames == 300:
+        if num_frames == 900:
             batch_id, batch_ids = send_batch(process_video, kwargs["database"], batch_id, cursor, cnxn, transfer, batch_ids, remote_output_dir, remote_host)
             num_frames = 0
         num_frames += 1
