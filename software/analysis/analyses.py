@@ -261,9 +261,6 @@ class MatrixAnalysis(object):
         
         breath_mean = (breath_rifv+breath_riiv)/2
         
-        print(breath_rifv)
-        print(breath_riiv)
-        
         # Compute stdv to determine quality of breathing rate
         std_rifv = np.std(np.diff(peak_rifv))
         std_riiv = np.std(np.diff(peak_riiv))
@@ -276,7 +273,7 @@ class MatrixAnalysis(object):
         if not (rifv_in_range|riiv_in_range|mean_in_range):
             breath_per_min = (rr_max+rr_min)/2
         elif mean_in_range and not (rifv_in_range and riiv_in_range):
-            breath_per_min = mean_in_range
+            breath_per_min = breath_mean
         elif rifv_in_range and not riiv_in_range:
             breath_per_min = breath_rifv
         elif riiv_in_range and not rifv_in_range:
@@ -507,9 +504,6 @@ class FDAnalysis(object):
         
         breath_mean = (breath_rifv+breath_riiv)/2
         
-        print(breath_rifv)
-        print(breath_riiv)
-        
         # Compute stdv to determine quality of breathing rate
         std_rifv = np.std(np.diff(peak_rifv))
         std_riiv = np.std(np.diff(peak_riiv))
@@ -522,7 +516,7 @@ class FDAnalysis(object):
         if not (rifv_in_range|riiv_in_range|mean_in_range):
             breath_per_min = (rr_max+rr_min)/2
         elif mean_in_range and not (rifv_in_range and riiv_in_range):
-            breath_per_min = mean_in_range
+            breath_per_min = breath_mean
         elif rifv_in_range and not riiv_in_range:
             breath_per_min = breath_rifv
         elif riiv_in_range and not rifv_in_range:
