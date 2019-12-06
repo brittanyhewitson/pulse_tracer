@@ -70,13 +70,13 @@ def main(input_dir, roi_locations, database, preprocess_analysis):
             processed_file = os.path.join(processed_dir, files[0])
             shutil.move(video_file, processed_file)
             
-            '''
+            
             # Run the analysis pipeline
             run_analysis_pipeline(
                 preprocess_analysis=preprocess_analysis,
                 json_filepath=output_dir,
             )
-            '''
+            
             
         else:
             time.sleep(2)
