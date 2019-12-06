@@ -272,7 +272,7 @@ class MatrixAnalysis(object):
         
         if not (rifv_in_range|riiv_in_range|mean_in_range):
             breath_per_min = (rr_max+rr_min)/2
-        elif mean_in_range and not (rifv_in_range and riiv_in_range):
+        elif mean_in_range and not (rifv_in_range|riiv_in_range):
             breath_per_min = breath_mean
         elif rifv_in_range and not riiv_in_range:
             breath_per_min = breath_rifv
@@ -515,7 +515,7 @@ class FDAnalysis(object):
         
         if not (rifv_in_range|riiv_in_range|mean_in_range):
             breath_per_min = (rr_max+rr_min)/2
-        elif mean_in_range and not (rifv_in_range and riiv_in_range):
+        elif mean_in_range and not (rifv_in_range|riiv_in_range):
             breath_per_min = breath_mean
         elif rifv_in_range and not riiv_in_range:
             breath_per_min = breath_rifv
