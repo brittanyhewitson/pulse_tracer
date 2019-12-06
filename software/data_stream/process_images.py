@@ -14,7 +14,8 @@ from datetime import datetime
 from templates import (
     LOGGING_FORMAT,
     TIMEZONE,
-    SOFTWARE_DIR
+    SOFTWARE_DIR,
+    ROI_NUM_TO_WORD_MAP
 )
 
 # Set up logging
@@ -236,9 +237,13 @@ class ProcessVideo(Process):
             # Check if the base directory exists
             if not os.path.exists(self.base_dest_dir):
                 os.makedirs(self.base_dest_dir)
-            
+            '''
+            # TODO: REMOVE
+            roi_location = ROI_NUM_TO_WORD_MAP[str(self.rois[0]["location_id"])]
+            '''
             filename = self.base_dest_dir.split("/")[-1]
             filename = "_".join([filename, batch_id_str])
+            # filename = "_".join([filename, batch_id_str, roi_location])
             dest_file = os.path.join(self.base_dest_dir, filename)
             with open(f"{dest_file}.json", "w") as write_filename:
                 json.dump(self.rois, write_filename)

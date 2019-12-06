@@ -71,7 +71,7 @@ def preprocessing_algorithm():
 def matrix_decomposition(**kwargs):
     """
     """
-    matrix_decomposition_cmd(**kwargs)
+    hr, rr = matrix_decomposition_cmd(**kwargs)
 
 
 def matrix_decomposition_cmd(**kwargs):
@@ -161,6 +161,7 @@ def matrix_decomposition_cmd(**kwargs):
         except:
             logging.error("Reattempt analysis on subsequent script call")
 
+    return hr, rr
 
 @preprocessing_algorithm.command()
 @click.option("--json_filepath")
@@ -169,7 +170,7 @@ def matrix_decomposition_cmd(**kwargs):
 def fd_bss(**kwargs):
     """
     """
-    fd_bss_cmd(**kwargs)
+    hr, rr = fd_bss_cmd(**kwargs)
 
 
 def fd_bss_cmd(**kwargs):
@@ -261,6 +262,7 @@ def fd_bss_cmd(**kwargs):
         except:
             logging.error("Reattempt analysis on subsequent script call")
 
+    return hr, rr
 
 if __name__=='__main__':
     preprocessing_algorithm()

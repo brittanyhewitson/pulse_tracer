@@ -22,15 +22,16 @@ def run_analysis_pipeline(preprocess_analysis, json_filepath, database=False):
     Runs the data analysis given a filepath to a JSON file holding the ROI data
     """
     if preprocess_analysis == "FDBSS":
-        fd_bss_cmd(
+        hr, rr = fd_bss_cmd(
             json_filepath=json_filepath,
             database=database
         )
     else:
-        matrix_decomposition_cmd(
+        hr, rr = matrix_decomposition_cmd(
             json_filepath=json_filepath,
             database=database
         )
+    return hr, rr
 
 
 def run_video_preprocess(video_file, roi_locations, preprocess_analysis, database=False, ssh_client=None):

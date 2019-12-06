@@ -9,7 +9,7 @@ import pyodbc
 import numpy as np
 
 from datetime import datetime
-from process_images import ProcessVideo
+from data_stream.process_images import ProcessVideo
 from templates import (
     LOGGING_FORMAT,
     TIMEZONE,
@@ -145,7 +145,7 @@ def get_roi_data(process_video, **kwargs):
         process_video.get_landmarks(faces, kwargs["roi_locations"], batch_id)
 
         # Show the image
-        cv2.imshow('frame', process_video.frame)
+        # cv2.imshow('frame', process_video.frame)
 
         # Save the data
         # TODO: Add counter here to count number of frames. Once it reaches

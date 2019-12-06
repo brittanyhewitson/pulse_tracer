@@ -46,7 +46,7 @@ class MatrixAnalysis(object):
             except KeyError:
                 roi_data[location_id] = []
                 roi_data[location_id].append(roi["red_data"])
-        ppg_data=np.array([np.array(xi) for key, xi in roi_data.items()])
+        ppg_data = np.array([np.array(xi) for key, xi in roi_data.items()])
         ppg_data = ppg_data.astype(int)
 
         for i in range(ppg_data.shape[0]):
@@ -123,8 +123,9 @@ class MatrixAnalysis(object):
             quality_array[i] = power_fraction
             
             
-            print('Signal :: ' + str(i))
-            print('Power fraction', power_fraction)
+            #print('Signal :: ' + str(i))
+            #print('Power fraction', power_fraction)
+            '''
             if verbose:
                 
                 #Plot Signals
@@ -138,6 +139,7 @@ class MatrixAnalysis(object):
                 plt.xlabel('Time [s]')
                 plt.ylabel('Frequency [bpm]')
                 plt.show()
+            '''
 
         return quality_array
 
@@ -199,7 +201,7 @@ class MatrixAnalysis(object):
         stft_vp = stft_vp[::-1,:]
 
         # Plot Extracted Signal
-        
+        '''
         nt_i =0
         nt_f = 1200
         plt.plot(t_v[nt_i:nt_f],filtered_signal[nt_i:nt_f]*-1,linewidth = 3)
@@ -210,6 +212,7 @@ class MatrixAnalysis(object):
         plt.grid('on',color = 'gray')
         plt.show()
         plt.clf()
+        '''
         self.ppg_data = filtered_signal
 
     def get_hr(self):
@@ -386,9 +389,11 @@ class FDAnalysis(object):
             highcut=4,
             order=5
         )
+        '''
         plt.plot(self.ppg_data)
         plt.show()
         plt.clf()
+        '''
         
         # Get the fourier transform of the signal
         fourier_signal = self.fourier_transform(self.ppg_data)

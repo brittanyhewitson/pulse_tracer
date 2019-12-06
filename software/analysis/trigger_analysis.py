@@ -94,12 +94,12 @@ def analyze_roi(batch_ids, wait_time):
 
         logging.info(f"Running analysis for batch {batch_id}")
         if batch["preprocessing_analysis"] == "MD":
-            matrix_decomposition_cmd(
+            hr, rr = matrix_decomposition_cmd(
                 batch_id=batch_id,
                 database=True
             )
         else:
-            fd_bss_cmd(
+            hr, rr = fd_bss_cmd(
                 batch_id=batch_id,
                 database=True
             )
