@@ -243,36 +243,114 @@ class MatrixAnalysis(object):
     def get_rr(self):
         """
         """
-        # TODO
+        # Reasonable respiration rates per min
+        rr_min = 5
+        rr_max = 25
 
         # Bandpass the signal 
-        filtered = self.butter_bandpass(self.ppg_data, 0.067, 1, 5)
+        signal_filt = self.butter_bandpass(self.ppg_data, 0.067, 1, 5)
 
-        filtered = savgol_filter(filtered, 11, 1)
+        signal_filt = savgol_filter(signal_filt, 11, 1)
 
-        try:
-            # Find peaks
-            peaks = find_peaks(filtered, height=0)
+        # Remove outliers
+        signal_filt = self.hampel_filt(signal_filt)
 
-            # Interpolate between peaks to find envelope
-            model = interp1d(
-                peaks[0], 
-                peaks[1]['peak_heights'], 
-                kind='cubic', 
-                bounds_error=False, 
-                fill_value=0.0
-            )
-
-            resp_signal = [model(x) for x in range(len(filtered))]
-
-            # Calculate respiratory rate
-            breath_num = len(find_peaks(resp_signal))
-            breath_per_min = breath_num/(len(resp_signal)/(self.frame_rate*60))
-        except:
-            logging.error("RR failed, returning 0")
-            return 0
+        # Fusion of algorithms
+        breath_rifv, peak_rifv = self.resp_rifv(signal_filt, rr_min, rr_max)
+        breath_riiv, peak_riiv = self.resp_riiv(signal_filt)
+        
+        breath_mean = (breath_rifv+breath_riiv)/2
+        
+        print(breath_rifv)
+        print(breath_riiv)
+        
+        # Compute stdv to determine quality of breathing rate
+        std_rifv = np.std(np.diff(peak_rifv))
+        std_riiv = np.std(np.diff(peak_riiv))
+        
+        # Determine which rates are in range
+        rifv_in_range = rr_min < breath_rifv < rr_max
+        riiv_in_range = rr_min < breath_riiv < rr_max
+        mean_in_range = rr_min < breath_mean < rr_max
+        
+        if not (rifv_in_range|riiv_in_range|mean_in_range):
+            breath_per_min = (rr_max+rr_min)/2
+        elif mean_in_range and not (rifv_in_range and riiv_in_range):
+            breath_per_min = mean_in_range
+        elif rifv_in_range and not riiv_in_range:
+            breath_per_min = breath_rifv
+        elif riiv_in_range and not rifv_in_range:
+            breath_per_min = breath_riiv 
+        elif rifv_in_range and (std_rifv < std_riiv):
+            breath_per_min = breath_rifv
+        else:
+            breath_per_min = breath_riiv
         
         return breath_per_min
+    
+    def hampel_filt(self, signal, filtsize=10):
+        filtered_data = signal
+        half_filt = filtsize//2
+        # TODO rewrite without loop
+        for i in range(half_filt, len(signal)-half_filt-1):
+            datawin = signal[i-half_filt : i+half_filt]
+            median = np.median(datawin)
+            mad = np.median(np.abs(datawin-median))
+            if signal[i] > median + (3*mad):
+                filtered_data[i] = median
+        return filtered_data
+    
+    def resp_rifv(self, signal, rr_min=5, rr_max=25): 
+        mad = np.median(np.abs(signal-np.median(signal)))
+        mad_dev_list = [0.5,0.9,1,1.1,1.5]
+        rr_sample_min = (rr_min/60)*self.frame_rate 
+        rr_sample_max = (rr_max/60)*self.frame_rate 
+        valid_peaks = []
+        valid_std = []
+        
+        for mad_dev in mad_dev_list:
+            #peaks, _ = find_peaks(signal, height=0, threshold=mad*mad_dev, distance=rr_sample_min)
+            peaks, _ = find_peaks(signal, height=0, distance=rr_sample_min)
+            
+            pk_diff = np.diff(peaks)
+            pk_std = np.std(pk_diff/self.frame_rate)
+            if pk_std > 0.1 and max(pk_diff) < rr_sample_max:
+                valid_peaks.append(peaks)
+                valid_std.append(pk_std)
+        
+        try:
+            best_peaks = valid_peaks[valid_std.index(min(valid_std))]
+        except:
+            best_peaks, _ = find_peaks(signal, height=0, distance=rr_sample_min)
+        
+        breath_per_min = len(best_peaks)/(len(signal)/(self.frame_rate*60))
+        return breath_per_min, best_peaks
+        
+                
+    def resp_riiv(self, signal):
+        # Find peaks
+        peaks = find_peaks(signal, height=0)
+
+        # Interpolate between peaks to find envelope
+        model = interp1d(
+            peaks[0], 
+            peaks[1]['peak_heights'], 
+            kind='cubic', 
+            bounds_error=False, 
+            fill_value=0.0
+        )
+        
+        try:
+            resp_signal = [model(x) for x in range(len(signal))]
+            resp_peaks, _ = find_peaks(resp_signal)
+        except:
+            logging.warning(f"Could not find riiv envelope") 
+            resp_peaks = peaks[0]
+
+        breath_num = len(resp_peaks)
+        breath_per_min = breath_num/(len(signal)/(self.frame_rate*60))
+            
+        return breath_per_min, resp_peaks
 
 
 
@@ -408,38 +486,114 @@ class FDAnalysis(object):
         
         return heart_rate
 
-    # TODO: Add Corey's RR algorithm here
     def get_rr(self):
         """
         """
-        # TODO
+        # Reasonable respiration rates per min
+        rr_min = 5
+        rr_max = 25
 
         # Bandpass the signal 
-        filtered = self.butter_bandpass(self.ppg_data, 0.067, 1, 5)
+        signal_filt = self.butter_bandpass(self.ppg_data, 0.067, 1, 5)
 
-        filtered = savgol_filter(filtered, 11, 1)
+        signal_filt = savgol_filter(signal_filt, 11, 1)
 
-        try:
-            # Find peaks
-            peaks = find_peaks(filtered, height=0)
+        # Remove outliers
+        signal_filt = self.hampel_filt(signal_filt)
 
-            # Interpolate between peaks to find envelope
-            model = interp1d(
-                peaks[0], 
-                peaks[1]['peak_heights'], 
-                kind='cubic', 
-                bounds_error=False, 
-                fill_value=0.0
-            )
-
-            resp_signal = [model(x) for x in range(len(filtered))]
-
-            # Calculate respiratory rate
-            breath_num = len(find_peaks(resp_signal))
-            breath_per_min = breath_num/(len(resp_signal)/(self.frame_rate*60))
-        except:
-            # TODO: Actual error checking here, not just excepting all errors
-            logging.error("RR Failed, returning 0")
-            return 0
+        # Fusion of algorithms
+        breath_rifv, peak_rifv = self.resp_rifv(signal_filt, rr_min, rr_max)
+        breath_riiv, peak_riiv = self.resp_riiv(signal_filt)
+        
+        breath_mean = (breath_rifv+breath_riiv)/2
+        
+        print(breath_rifv)
+        print(breath_riiv)
+        
+        # Compute stdv to determine quality of breathing rate
+        std_rifv = np.std(np.diff(peak_rifv))
+        std_riiv = np.std(np.diff(peak_riiv))
+        
+        # Determine which rates are in range
+        rifv_in_range = rr_min < breath_rifv < rr_max
+        riiv_in_range = rr_min < breath_riiv < rr_max
+        mean_in_range = rr_min < breath_mean < rr_max
+        
+        if not (rifv_in_range|riiv_in_range|mean_in_range):
+            breath_per_min = (rr_max+rr_min)/2
+        elif mean_in_range and not (rifv_in_range and riiv_in_range):
+            breath_per_min = mean_in_range
+        elif rifv_in_range and not riiv_in_range:
+            breath_per_min = breath_rifv
+        elif riiv_in_range and not rifv_in_range:
+            breath_per_min = breath_riiv 
+        elif rifv_in_range and (std_rifv < std_riiv):
+            breath_per_min = breath_rifv
+        else:
+            breath_per_min = breath_riiv
         
         return breath_per_min
+    
+    def hampel_filt(self, signal, filtsize=10):
+        filtered_data = signal
+        half_filt = filtsize//2
+        # TODO rewrite without loop
+        for i in range(half_filt, len(signal)-half_filt-1):
+            datawin = signal[i-half_filt : i+half_filt]
+            median = np.median(datawin)
+            mad = np.median(np.abs(datawin-median))
+            if signal[i] > median + (3*mad):
+                filtered_data[i] = median
+        return filtered_data
+    
+    def resp_rifv(self, signal, rr_min=5, rr_max=25): 
+        mad = np.median(np.abs(signal-np.median(signal)))
+        mad_dev_list = [0.5,0.9,1,1.1,1.5]
+        rr_sample_min = (rr_min/60)*self.frame_rate 
+        rr_sample_max = (rr_max/60)*self.frame_rate 
+        valid_peaks = []
+        valid_std = []
+        
+        for mad_dev in mad_dev_list:
+            #peaks, _ = find_peaks(signal, height=0, threshold=mad*mad_dev, distance=rr_sample_min)
+            peaks, _ = find_peaks(signal, height=0, distance=rr_sample_min)
+            
+            pk_diff = np.diff(peaks)
+            pk_std = np.std(pk_diff/self.frame_rate)
+            if pk_std > 0.1 and max(pk_diff) < rr_sample_max:
+                valid_peaks.append(peaks)
+                valid_std.append(pk_std)
+        
+        try:
+            best_peaks = valid_peaks[valid_std.index(min(valid_std))]
+        except:
+            best_peaks, _ = find_peaks(signal, height=0, distance=rr_sample_min)
+        
+        breath_per_min = len(best_peaks)/(len(signal)/(self.frame_rate*60))
+        return breath_per_min, best_peaks
+        
+                
+    def resp_riiv(self, signal):
+        # Find peaks
+        peaks = find_peaks(signal, height=0)
+
+        # Interpolate between peaks to find envelope
+        model = interp1d(
+            peaks[0], 
+            peaks[1]['peak_heights'], 
+            kind='cubic', 
+            bounds_error=False, 
+            fill_value=0.0
+        )
+        
+        try:
+            resp_signal = [model(x) for x in range(len(signal))]
+            resp_peaks, _ = find_peaks(resp_signal)
+        except:
+            logging.warning(f"Could not find riiv envelope") 
+            resp_peaks = peaks[0]
+
+        breath_num = len(resp_peaks)
+        breath_per_min = breath_num/(len(signal)/(self.frame_rate*60))
+            
+        return breath_per_min, resp_peaks
