@@ -39,6 +39,7 @@ class BatchFilters(filters.FilterSet):
             "preprocessing_analysis": ["exact"],
             "device__id": ["exact"],
             "creation_time": ["exact"],
+            "analyzed": ["exact"],
         }
 
 

@@ -23,6 +23,8 @@ spectrum_api = SpectrumApi()
 
 def update_analysis(analysis, batch):
     """
+    THIS WILL BE USED ONCE WE INTRODUCE WINDOWING, BUT FOR NOW THERE IS NO WINDOWING
+    SO WE ANALYZE ONE BATCH AT A TIME INSTEAD
     """
     # Gather all rois in batch
     rois = spectrum_api.list_resources(
@@ -40,8 +42,7 @@ def update_analysis(analysis, batch):
         in_progress = False
     else:
         logging.error(f"Unrecognized analysis type {analysis}. Skipping update")
-        return
-        
+        return 
     try:
         # update each roi
         for roi in rois:
@@ -56,7 +57,7 @@ def update_analysis(analysis, batch):
         logging.error(p.msg)
     except:
         logging.info("Reattempt analysis on subsequent script call")
-
+    
 
 @click.group()
 def preprocessing_algorithm():
@@ -124,9 +125,11 @@ def matrix_decomposition_cmd(**kwargs):
             batch=kwargs["batch_id"],
             patient=patient["id"]
         )
-
+        # TODO: Update the analysis once we introduce windowing
+        '''
         # Update the analysis
         update_analysis("hr", kwargs["batch_id"])
+        '''
 
     # Determine the respiratory rate
     rr = roi_analysis.get_rr()
@@ -141,9 +144,22 @@ def matrix_decomposition_cmd(**kwargs):
             batch=kwargs["batch_id"],
             patient=patient["id"]
         )
-
+        '''
         # Update the analysis
         update_analysis("rr", kwargs["batch_id"])
+        '''
+        # TODO: Remove this and use the above update once we introduce windowing
+        try:
+            # Update the batch
+            batch_update = spectrum_api.update(
+                "batches",
+                id=kwargs["batch_id"],
+                analyzed=True,
+            )
+        except PostError as p:
+            logging.error(p.msg)
+        except:
+            logging.error("Reattempt analysis on subsequent script call")
 
 
 @preprocessing_algorithm.command()
@@ -202,16 +218,18 @@ def fd_bss_cmd(**kwargs):
 
     if kwargs["database"]:
         # Create a HR object
-        hr_object = spectrum_api.create(
+        hr_object = spectrum_api.get_or_create(
             "heart_rates",
             heart_rate=round(hr, 2),
             analyzed_time=datetime.now(TIMEZONE).isoformat(),
             batch=kwargs["batch_id"],
             patient=patient["id"]
         )
-
+        # TODO: Update the analysis once we introduce windowing
+        '''
         # Update the analysis
         update_analysis("hr", kwargs["batch_id"])
+        '''
 
     # Determine the respiratory rate
     rr = roi_analysis.get_rr()
@@ -219,16 +237,29 @@ def fd_bss_cmd(**kwargs):
 
     if kwargs["database"]:
         # Create a RR object
-        rr_object = spectrum_api.create(
+        rr_object = spectrum_api.get_or_create(
             "respiratory_rates",
             respiratory_rate=round(rr, 2),
             analyzed_time=datetime.now(TIMEZONE).isoformat(),
             batch=kwargs["batch_id"],
             patient=patient["id"]
         )
-
+        '''
         # Update the analysis
         update_analysis("rr", kwargs["batch_id"])
+        '''
+        # TODO: Remove this and use the above update once we introduce windowing
+        try:
+            # Update the batch
+            batch_update = spectrum_api.update(
+                "batches",
+                id=kwargs["batch_id"],
+                analyzed=True,
+            )
+        except PostError as p:
+            logging.error(p.msg)
+        except:
+            logging.error("Reattempt analysis on subsequent script call")
 
 
 if __name__=='__main__':

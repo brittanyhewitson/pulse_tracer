@@ -62,7 +62,7 @@ def run_video_preprocess(video_file, roi_locations, preprocess_analysis, databas
             filename=video_file,
             roi_locations=roi_locations,
             preprocess_analysis=preprocess_analysis,
-            database=database
+            database=database,
         )
 
     # Check that the JSON output was successfully created

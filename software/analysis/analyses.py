@@ -266,7 +266,8 @@ class MatrixAnalysis(object):
             breath_num = len(find_peaks(resp_signal))
             breath_per_min = breath_num/(len(resp_signal)/(self.frame_rate*60))
         except:
-            return "RR Failed"
+            logging.error("RR failed, returning 0")
+            return 0
         
         return breath_per_min
 
@@ -375,7 +376,8 @@ class FDAnalysis(object):
         # ICA
         source_signal = self.get_source(normalized_signal)
         if len(source_signal) == 0:
-            raise Exception("HR Failed")
+            logging.error("HR failed, returning 0")
+            return 0
 
         # Bandpass filter the signal
         self.ppg_data = self.butter_bandpass(
@@ -431,6 +433,8 @@ class FDAnalysis(object):
             breath_num = len(find_peaks(resp_signal))
             breath_per_min = breath_num/(len(resp_signal)/(self.frame_rate*60))
         except:
-            return "RR Failed"
+            # TODO: Actual error checking here, not just excepting all errors
+            logging.error("RR Failed, returning 0")
+            return 0
         
         return breath_per_min

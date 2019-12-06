@@ -47,6 +47,7 @@ def main(input_dir, roi_locations, database, preprocess_analysis):
         # Check the for a new file
         files = os.listdir(input_dir)
         files = list(x for x in files if x.endswith(".h264"))
+        files.sort(key=lambda x: os.path.getmtime(os.path.join(input_dir, x)))
 
         if num_iter > 300:
             logging.info("No new files for 10 minutes. Terminating analysis")
@@ -56,11 +57,12 @@ def main(input_dir, roi_locations, database, preprocess_analysis):
             video_file = os.path.join(input_dir, files[0])
             
             # Process the video data to generate ROI JSON file
+            logging.info(f"Processing {video_file}")
             output_dir = run_video_preprocess(
                 video_file=video_file,
                 roi_locations=roi_locations,
                 preprocess_analysis=preprocess_analysis,
-                database=database
+                database=database,
             )
             
             # Move the video file 

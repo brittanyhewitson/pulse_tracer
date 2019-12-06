@@ -72,6 +72,10 @@ class Batch(models.Model):
         on_delete=models.CASCADE
     )
 
+    analyzed = models.BooleanField(
+        default=False
+    )
+
     # When the object PK is displayed
     def __str__(self):
         return "_".join(["B", format(self.id, "05")])

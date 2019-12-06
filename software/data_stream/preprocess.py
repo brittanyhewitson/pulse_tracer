@@ -52,12 +52,9 @@ def local_server_config():
     return cnxn
 
 
-def get_roi_data(process_video, **kwargs):
-    """
-    Processes a video to extract ROIs for each frame
-    """
+def send_batch(process_video, database, batch_id, cursor, cnxn, transfer, batch_ids, remote_output_dir, remote_host):
     # Initialize batch ID
-    if kwargs["database"]:
+    if database:
         batch_id = spectrum_api.create(
                 'batches',
                 preprocessing_analysis=process_video.preprocess_analysis,
@@ -65,11 +62,47 @@ def get_roi_data(process_video, **kwargs):
                 device=process_video.device
             )["id"]
     else:
-        batch_id = 0
+        batch_id += 1
+    # Store JSON data on local machine
+    dest_filepath, dest_filename = process_video.save_data(
+                                        database,
+                                        batch_id,
+                                        cursor,
+                                        cnxn,
+                                    )
+    if transfer:
+        remote_dest_file = os.path.join(remote_output_dir, dest_filename)
+        cmd = f"rsync -avPL {dest_filepath} {remote_host}:{remote_dest_file}"
+        subprocess.check_call(cmd, shell=True)
+    process_video.rois = []
+    batch_ids.append(batch_id)
+    '''
+    # Update the batch ID
+    if database:
+        batch_id = spectrum_api.create(
+            'batches',
+            preprocessing_analysis=process_video.preprocess_analysis,
+            creation_time=datetime.now(TIMEZONE).isoformat(),
+            device=process_video.device
+        )["id"]
+    else:
+        batch_id += 1
+    '''
+        
+    return batch_id, batch_ids
+
+
+def get_roi_data(process_video, **kwargs):
+    """
+    Processes a video to extract ROIs for each frame
+    """
+    batch_id = 0
     batch_ids = []
     transfer = False
     cnxn = None
     cursor = None
+    remote_host = None
+    remote_output_dir = None
 
     try:
         if kwargs["remote_host"] and kwargs["remote_output_dir"]:
@@ -93,6 +126,7 @@ def get_roi_data(process_video, **kwargs):
     while(True):
         frame = process_video.get_frame()
         if frame is None:
+            batch_id, batch_ids = send_batch(process_video, kwargs["database"], batch_id, cursor, cnxn, transfer, batch_ids, remote_output_dir, remote_host)
             break
 
         # Add frame info to the class
@@ -116,32 +150,9 @@ def get_roi_data(process_video, **kwargs):
         # Save the data
         # TODO: Add counter here to count number of frames. Once it reaches
         # 900 (30 seconds of video) increment the counter 
-        if num_frames == 10:
-            # Store JSON data on local machine
-            dest_filepath, dest_filename = process_video.save_data(
-                                                kwargs["database"],
-                                                batch_id,
-                                                cursor,
-                                                cnxn,
-                                            )
-            if transfer:
-                remote_dest_file = os.path.join(remote_output_dir, dest_filename)
-                cmd = f"rsync -avPL {dest_filepath} {remote_host}:{remote_dest_file}"
-                subprocess.check_call(cmd, shell=True)
-            process_video.rois = []
-            batch_ids.append(batch_id)
-
-            # Update the batch ID
-            if kwargs["database"]:
-                batch_id = spectrum_api.create(
-                    'batches',
-                    preprocessing_analysis=process_video.preprocess_analysis,
-                    creation_time=datetime.now(TIMEZONE).isoformat(),
-                    device=process_video.device
-                )["id"]
-            else:
-                batch_id += 1
-            num_frames = -1
+        if num_frames == 300:
+            batch_id, batch_ids = send_batch(process_video, kwargs["database"], batch_id, cursor, cnxn, transfer, batch_ids, remote_output_dir, remote_host)
+            num_frames = 0
         num_frames += 1
 
         # Break if the "q" key is selected

@@ -7,7 +7,8 @@ password = '@ensc405'
 driver= '{ODBC Driver 17 for SQL Server}'
 
 # Executes SQL on the following tables
-tables = ['pulse_tracer_patient_health_care_provider','pulse_tracer_patient','pulse_tracer_roi','pulse_tracer_device','pulse_tracer_healthcare','pulse_tracer_heartrate','pulse_tracer_respiratoryrate']
+#tables = ['pulse_tracer_patient_health_care_provider','pulse_tracer_patient','pulse_tracer_roi','pulse_tracer_device','pulse_tracer_healthcare','pulse_tracer_heartrate','pulse_tracer_respiratoryrate']
+tables = ['pulse_tracer_roi','pulse_tracer_heartrate','pulse_tracer_respiratoryrate','pulse_tracer_batch']
 
 # Connect to db
 connection = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
