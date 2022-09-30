@@ -3,7 +3,7 @@ cmake==3.14.4
 coreapi==2.3.3
 cycler==0.10.0
 dlib==19.17.0
-joblib==0.13.2
+joblib==1.2.0
 kiwisolver==1.1.0
 matplotlib==3.0.3
 numexpr==2.6.9
